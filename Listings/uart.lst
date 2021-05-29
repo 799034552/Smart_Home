@@ -1,0 +1,197 @@
+C51 COMPILER V9.54   UART                                                                  05/26/2021 16:51:20 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE UART
+OBJECT MODULE PLACED IN .\Objects\uart.obj
+COMPILER INVOKED BY: E:\C\keil\C51\BIN\C51.EXE User\uart.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(.\User) DEBUG PRINT(.\Li
+                    -stings\uart.lst) TABS(2) OBJECT(.\Objects\uart.obj)
+
+line level    source
+
+   1          #include "uart.h"
+   2          #include <stdio.h>
+   3          //串口数据
+   4          unsigned char i2 = 0;
+   5          xdata char uart2SendData[100];
+   6          xdata char strRes[8] = "10\011111";
+   7          //串口2初始化
+   8          void uart2Init(void)
+   9          {
+  10   1        S2CON = 0x50;             //方式1，八位数据，可变波特率
+  11   1        AUXR1 = 0x00;          //1T工作方式
+  12   1        PCON  = 0x00;          //不倍增波特率
+  13   1        IP2   = 0x00;          //优先级默认
+  14   1        BRT   = 0XFD;            //设置波特率9600
+  15   1        AUXR  = 0x10;          //启动波特率发生器
+  16   1        EA    = 1;           //开总中断
+  17   1        IP   = 0x00;         //优先级默认
+  18   1        IE2   = 0x01;          //开串口2中断
+  19   1      }
+  20          unsigned char ES2(char b) {if(b==-1) return IE2&0x01;b?(IE2|=0x01):(IE2&=~0x01);return 1;}
+  21          unsigned char S2RI(char b) {if(b==-1) return S2CON&0x01;b?(S2CON|=0x01):(S2CON&=~0x01);return 1;}
+  22          unsigned char S2TI(char b) {if(b==-1) return S2CON&0x02;b?(S2CON|=0x02):(S2CON&=~0x02);return 1;}
+  23          void uart2AddChar(char* s)
+  24          {
+  25   1        uchar i = 0;
+  26   1        uchar len = 0;
+  27   1        while(s[len++] != '\0');
+  28   1        for(i = 0; i< len-1; i++)
+  29   1        {
+  30   2          uart2SendData[i2++] = s[i];
+  31   2        }
+  32   1      }
+  33          void uart2AddCharLen(char* s, uchar len)
+  34          {
+  35   1        uchar i = 0;
+  36   1        for(i = 0; i< len; i++)
+  37   1        {
+  38   2          uart2SendData[i2++] = s[i];
+  39   2        }
+  40   1      }
+  41          void uart2Clear() {i2=0;}
+  42          
+  43          void uart2Send()
+  44          {
+  45   1        unsigned char i = 0;
+  46   1        ES2(0);
+  47   1        for(i = 0; i < i2; i++)
+  48   1        {
+  49   2          S2BUF = uart2SendData[i];
+  50   2          while(!S2TI(-1));
+  51   2          S2TI(0);
+  52   2        }
+  53   1        ES2(1);
+  54   1        uart2Clear();
+C51 COMPILER V9.54   UART                                                                  05/26/2021 16:51:20 PAGE 2   
+
+  55   1      }
+  56          void uart2SendEnd()
+  57          {
+  58   1        uart2AddChar("\r\n");
+  59   1        uart2Send();
+  60   1      }
+  61          void uart2SendChar(char*s)
+  62          {
+  63   1        uart2Clear();
+  64   1        uart2AddChar(s);
+  65   1        uart2SendEnd();
+  66   1      }
+  67          void uartInit(void)
+  68          {
+  69   1        TMOD|=0x20;
+  70   1        TH1=0xfd;
+  71   1        TL1=0xfd;
+  72   1        TR1=1;
+  73   1        REN=1;
+  74   1        SM0=0;
+  75   1        SM1=1;
+  76   1        EA=1;
+  77   1        ES=1;
+  78   1      }
+  79          void uartSend(char*s)
+  80          {
+  81   1        uchar i;
+  82   1        uchar len = 0;
+  83   1        while(s[len++] != '\0');
+  84   1        len-=1;
+  85   1        ES = 0;
+  86   1        for(i = 0; i < len;i++)
+  87   1        {
+  88   2          SBUF = s[i];
+  89   2          while(!TI);
+  90   2          TI = 0;
+  91   2        }
+  92   1        ES = 1;
+  93   1      }
+  94          void uartSend_number(long num)
+  95          {
+  96   1        char i;
+  97   1        uchar nums[12];
+  98   1        uchar len = 0;
+  99   1        while(num / 10)
+ 100   1        {
+ 101   2          nums[len++] = num % 10;
+ 102   2          num /= 10;
+ 103   2        }
+ 104   1        nums[len++] = num % 10;
+ 105   1        ES = 0;
+ 106   1        for(i = len - 1; i >= 0;i--)
+ 107   1        {
+ 108   2          SBUF = nums[i] + '0';
+ 109   2          while(!TI);
+ 110   2          TI = 0;
+ 111   2        }
+ 112   1        ES = 1;
+ 113   1      }
+ 114          bit strInclude(uchar*s1,uchar*s2,char len1, char len2)
+ 115          {
+ 116   1        uchar i = 0,j = 0;
+C51 COMPILER V9.54   UART                                                                  05/26/2021 16:51:20 PAGE 3   
+
+ 117   1        if (len1 < len2)
+ 118   1          return 0;
+ 119   1        for(i = 0; i <= len1 - len2; i++)
+ 120   1        {
+ 121   2          for(j=0; j < len2; j++)
+ 122   2          {
+ 123   3            if(s1[i+j] != s2[j])
+ 124   3              break;
+ 125   3          }
+ 126   2          if(j == len2)
+ 127   2            return 1;
+ 128   2        }
+ 129   1        return 0;
+ 130   1      }
+ 131          /*********************
+ 132                转换函数
+ 133          **********************/
+ 134          char* num_to_Str(long num, char want_bit)
+ 135          {
+ 136   1        uchar i;
+ 137   1        long t = 1;
+ 138   1        if(want_bit == -1)
+ 139   1        {
+ 140   2          want_bit = 1;
+ 141   2          while(num / t != 0)
+ 142   2          {
+ 143   3            want_bit++;
+ 144   3            t *=10;
+ 145   3          }
+ 146   2      
+ 147   2        }else
+ 148   1        {
+ 149   2          for(i=0; i < want_bit ;i++)
+ 150   2            t*=10;
+ 151   2          num %= t;
+ 152   2        }
+ 153   1        i = 0;
+ 154   1        t /= 10;
+ 155   1        while(t != 0)
+ 156   1        {
+ 157   2          strRes[i++] = num / t + '0';
+ 158   2          num %= t;
+ 159   2          t /= 10;
+ 160   2        }
+ 161   1        strRes[i] = '\0';
+ 162   1        return strRes;
+ 163   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    965    ----
+   CONSTANT SIZE    =      3    ----
+   XDATA SIZE       =    108    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1      46
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+C51 COMPILER V9.54   UART                                                                  05/26/2021 16:51:20 PAGE 4   
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

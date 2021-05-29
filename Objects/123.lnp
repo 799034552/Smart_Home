@@ -1,0 +1,10 @@
+".\Objects\main.obj",
+".\Objects\uart.obj",
+".\Objects\iic.obj",
+".\Objects\env.obj",
+".\Objects\timer.obj",
+".\Objects\music.obj",
+".\Objects\key.obj" 
+TO ".\Objects\123" 
+
+PRINT(".\Listings\123.map") REMOVEUNUSED 

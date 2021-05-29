@@ -1,0 +1,1 @@
+"User\timer.c" OMF2 OPTIMIZE (8,SPEED) BROWSE INCDIR(.\User) DEBUG PRINT(.\Listings\timer.lst) TABS (2) OBJECT(.\Objects\timer.obj)

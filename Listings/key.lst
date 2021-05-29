@@ -1,0 +1,116 @@
+C51 COMPILER V9.54   KEY                                                                   05/29/2021 11:47:19 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE KEY
+OBJECT MODULE PLACED IN .\Objects\key.obj
+COMPILER INVOKED BY: E:\C\keil\C51\BIN\C51.EXE User\key.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(.\User) DEBUG PRINT(.\Lis
+                    -tings\key.lst) TABS(2) OBJECT(.\Objects\key.obj)
+
+line level    source
+
+   1          #include "key.h"
+   2          #include <intrins.h>
+   3          #define uint unsigned int 
+   4          #define uchar unsigned char 
+   5          uchar keys[] = {3,4,5,6};
+   6          /*****************
+   7           延迟
+   8          ******************/
+   9          void delayms (uint t )
+  10          {
+  11   1        uint i,j,k;
+  12   1        for(k=0;k<t;k++)
+  13   1        for( i=0; i<10; i++)
+  14   1        for( j=0; j<95; j++);
+  15   1      }
+  16          /*****************
+  17           获取某个p口的某个电平值
+  18          ******************/
+  19          bit getBit(uchar p, uchar i) {
+  20   1        uchar mask = 0x01 << i;
+  21   1        switch(p){
+  22   2          case 0:
+  23   2           return ((P0 & mask) == 0?0:1);
+  24   2          case 1: 
+  25   2            return ((P1 & mask) == 0?0:1);
+  26   2          case 2: 
+  27   2            return ((P2 & mask) == 0?0:1);
+  28   2          case 3: 
+  29   2            return ((P3 & mask) == 0?0:1);
+  30   2        }
+  31   1        return 0;
+  32   1      }
+  33          /*****************
+  34           扫描按键
+  35          ******************/
+  36          char scanKey(bit longAble)
+  37          {
+  38   1        static bit be_state = 0;
+  39   1        uchar i;
+  40   1        if(longAble)
+  41   1          be_state = 1;
+  42   1        for(i = 0; i < 4; i++)
+  43   1        {
+  44   2          if(getBit(3,keys[i]) == 0)
+  45   2          {
+  46   3            delayms(10);
+  47   3            if(getBit(3,keys[i]) == 0)
+  48   3            {
+  49   4              be_state = 1;
+  50   4              return i;
+  51   4            }
+  52   3          }
+  53   2        }
+  54   1        be_state = 0;
+C51 COMPILER V9.54   KEY                                                                   05/29/2021 11:47:19 PAGE 2   
+
+  55   1        return -1;
+  56   1      }
+  57          /*****************
+  58           扫描矩阵按键
+  59          ******************/
+  60          char scanMatricKey(bit longAble) {
+  61   1        static bit be_state = 0;
+  62   1        uchar temp, out = 0xfe,mask = 0xef,i, j;
+  63   1        if(longAble)
+  64   1          be_state = 1;
+  65   1        for (i = 0; i < 4; i++) {
+  66   2          P3 = _crol_(out, i);
+  67   2          temp = P3 & 0xf0;
+  68   2          if (temp != 0xf0) {
+  69   3            delayms(10);
+  70   3            P3 = _crol_(out, i);
+  71   3            temp = P3 & 0xf0;
+  72   3            if (temp != 0xf0) {
+  73   4              temp = P3;
+  74   4              for (j = 0; j < 4; j++) {
+  75   5                 if (temp == ((_crol_(out, i) & 0x0f) | (_crol_(mask, j) & 0xf0))) {
+  76   6                   be_state = 1;
+  77   6                   return i*4+j;
+  78   6                   break;
+  79   6                 }
+  80   5              }
+  81   4            }
+  82   3          }
+  83   2        }
+  84   1        be_state = 0;
+  85   1        return 0;
+  86   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    272    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      4       2
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2       2
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

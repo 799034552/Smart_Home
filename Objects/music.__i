@@ -1,0 +1,1 @@
+"User\music.c" OMF2 OPTIMIZE (8,SPEED) BROWSE INCDIR(.\User) DEBUG PRINT(.\Listings\music.lst) TABS (2) OBJECT(.\Objects\music.obj)

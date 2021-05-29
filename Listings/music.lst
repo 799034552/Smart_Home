@@ -1,0 +1,73 @@
+C51 COMPILER V9.54   MUSIC                                                                 05/29/2021 11:41:49 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MUSIC
+OBJECT MODULE PLACED IN .\Objects\music.obj
+COMPILER INVOKED BY: E:\C\keil\C51\BIN\C51.EXE User\music.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(.\User) DEBUG PRINT(.\L
+                    -istings\music.lst) TABS(2) OBJECT(.\Objects\music.obj)
+
+line level    source
+
+   1          #include "music.h"
+   2          #define uint unsigned int 
+   3          #define uchar unsigned char 
+   4          sbit io1 = P0^0;
+   5          sbit io2 = P0^2;
+   6          sbit io3 = P0^2;
+   7          uchar N = 3;
+   8          void delays (uint t )
+   9          {
+  10   1        uint i,j,k;
+  11   1        for(k=0;k<t;k++)
+  12   1        for( i=0; i<10; i++)
+  13   1        for( j=0; j<95; j++);
+  14   1      }
+  15          void music_init()
+  16          {
+  17   1        io1 = 1;
+  18   1        io3 = 1;
+  19   1      }
+  20          void clock_start()
+  21          {
+  22   1        io1 = 0;
+  23   1      }
+  24          void clock_stop()
+  25          {
+  26   1        io1 = 1;
+  27   1      }
+  28          void play_one(char n)
+  29          {
+  30   1        uchar t;
+  31   1        if(n > N)
+  32   1          t = n -N;
+  33   1        else
+  34   1          t = n - N + 10;
+  35   1        while(t--)
+  36   1        {
+  37   2          io3 = 0;
+  38   2          delays(70);
+  39   2          io3 = 1;
+  40   2          delays(70);
+  41   2        }
+  42   1        N = n;
+  43   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    115    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+C51 COMPILER V9.54   MUSIC                                                                 05/29/2021 11:41:49 PAGE 2   
+
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
