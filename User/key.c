@@ -6,12 +6,18 @@ uchar keys[] = {3,4,5,6};
 /*****************
  延迟
 ******************/
-void delayms (uint t )
+void Delay10ms()
 {
-	uint i,j,k;
-	for(k=0;k<t;k++)
-	for( i=0; i<10; i++)
-	for( j=0; j<95; j++);
+	unsigned char i, j;
+
+	_nop_();
+	_nop_();
+	i = 108;
+	j = 144;
+	do
+	{
+		while (--j);
+	} while (--i);
 }
 /*****************
  获取某个p口的某个电平值
@@ -43,9 +49,11 @@ char scanKey(bit longAble)
 	{
 		if(getBit(3,keys[i]) == 0)
 		{
-			delayms(10);
+			Delay10ms();
 			if(getBit(3,keys[i]) == 0)
 			{
+				if(be_state != 0)
+					return -1;
 				be_state = 1;
 				return i;
 			}
@@ -66,21 +74,22 @@ char scanMatricKey(bit longAble) {
 		P3 = _crol_(out, i);
 		temp = P3 & 0xf0;
 		if (temp != 0xf0) {
-			delayms(10);
+			Delay10ms();
 			P3 = _crol_(out, i);
 			temp = P3 & 0xf0;
 			if (temp != 0xf0) {
 				temp = P3;
 				for (j = 0; j < 4; j++) {
 					 if (temp == ((_crol_(out, i) & 0x0f) | (_crol_(mask, j) & 0xf0))) {
-						 be_state = 1;
-						 return i*4+j;
-						 break;
+						 	if(be_state != 0)
+								return -1;
+							be_state = 1;
+							return i*4+j;
 					 }
 				}
 			}
 		}
 	}
 	be_state = 0;
-	return 0;
+	return -1;
 }

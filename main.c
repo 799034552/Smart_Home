@@ -3,6 +3,7 @@
 #include "env.h"
 #include "timer.h"
 #include "music.h"
+#include "key.h"
 #define uchar unsigned char//宏定义无符号字符型
 #define uint unsigned int  //宏定义无符号整型
 /********************************************************************
@@ -177,7 +178,6 @@ void updataSensor()
 *********************************************************************/   	
 void main()
 {
-	char a[3] = {0xc8,0xfd,'\0'};
 	time0_init();
 	uartInit();
 //	connectService();
@@ -189,12 +189,17 @@ void main()
 //	uart2AddChar("");
 //	uart2SendEnd();
 //	pos = 0;
-	press_init();
+//	press_init();
 //	music_init();
 	delay1ms(1000);
-	updataSensor();
+//	updataSensor();
 	while(1)
 	{
+		if(scanMatricKey(0) != -1)
+		{
+			led5 = !led5;
+			delay1ms(300);
+		}
 //		play_one(2);
 //		led = !led;
 //		delay1ms(2000);
@@ -202,21 +207,21 @@ void main()
 		/*************
 			时钟更新事件
 		**************/
-		if(time_update_flag)
-		{
-			//uartSend_number(2021);
-			time_update();
-			showTime();checkBusy();
-			time_update_flag = 0;
-		}
+//		if(time_update_flag)
+//		{
+//			//uartSend_number(2021);
+//			time_update();
+//			showTime();checkBusy();
+//			time_update_flag = 0;
+//		}
 		/*************
 			传感器更新事件
 		**************/
-		if(sensor_flag)
-		{
-			updataSensor();
-			sensor_flag = 0;
-		}
+//		if(sensor_flag)
+//		{
+//			updataSensor();
+//			sensor_flag = 0;
+//		}
 		/*************
 		湿度传感器
 		**************/

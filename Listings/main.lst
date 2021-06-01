@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  05/29/2021 11:41:49 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  05/29/2021 13:29:52 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -13,187 +13,187 @@ line level    source
    3          #include "env.h"
    4          #include "timer.h"
    5          #include "music.h"
-   6          #define uchar unsigned char//宏定义无符号字符型
-   7          #define uint unsigned int  //宏定义无符号整型
-   8          /********************************************************************
-   9                                      初始定义
-  10          *********************************************************************/
-  11          bit flag = 0;
-  12          bit dFlag = 0;
-  13          sbit led = P1^1;
-  14          sbit led5 = P1^5;
-  15          bit Busy = 0;
-  16          xdata uchar receive[100];
-  17          bit door = 0, light = 0;
-  18          xdata int workTime = 10;
-  19          uchar pos=0;
-  20          //------延迟函数------------
-  21          void delay1ms (uint t )
-  22          {
-  23   1        uint i,j,k;
-  24   1        for(k=0;k<t;k++)
-  25   1        for( i=0; i<10; i++)
-  26   1        for( j=0; j<95; j++);
-  27   1      }
-  28          /*************************************************
-  29                            显示门状态
-  30          *************************************************/
-  31          void showDoorState()
-  32          {
-  33   1        uart2Clear();
-  34   1        
-  35   1        if(door)
-  36   1          uart2SendChar("SBC(51);DCV16(275,163,'ON',16);");
-  37   1        else
-  38   1          uart2SendChar("SBC(51);DCV16(275,163,'OFF',16);");
-  39   1      }
-  40          /*************************************************
-  41                            显示灯状态
-  42          *************************************************/
-  43          void showLightState()
-  44          {
-  45   1        uart2Clear();
-  46   1        
-  47   1        if(door)
-  48   1          uart2SendChar("SBC(46);DCV16(275,220,'ON',16);");
-  49   1        else
-  50   1          uart2SendChar("SBC(46);DCV16(275,220,'OFF',16);");
-  51   1      }
-  52          /*************************************************
-  53                            显示工作时间
-  54          *************************************************/
-C51 COMPILER V9.54   MAIN                                                                  05/29/2021 11:41:49 PAGE 2   
+   6          #include "key.h"
+   7          #define uchar unsigned char//宏定义无符号字符型
+   8          #define uint unsigned int  //宏定义无符号整型
+   9          /********************************************************************
+  10                                      初始定义
+  11          *********************************************************************/
+  12          bit flag = 0;
+  13          bit dFlag = 0;
+  14          sbit led = P1^1;
+  15          sbit led5 = P1^5;
+  16          bit Busy = 0;
+  17          xdata uchar receive[100];
+  18          bit door = 0, light = 0;
+  19          xdata int workTime = 10;
+  20          uchar pos=0;
+  21          //------延迟函数------------
+  22          void delay1ms (uint t )
+  23          {
+  24   1        uint i,j,k;
+  25   1        for(k=0;k<t;k++)
+  26   1        for( i=0; i<10; i++)
+  27   1        for( j=0; j<95; j++);
+  28   1      }
+  29          /*************************************************
+  30                            显示门状态
+  31          *************************************************/
+  32          void showDoorState()
+  33          {
+  34   1        uart2Clear();
+  35   1        
+  36   1        if(door)
+  37   1          uart2SendChar("SBC(51);DCV16(275,163,'ON',16);");
+  38   1        else
+  39   1          uart2SendChar("SBC(51);DCV16(275,163,'OFF',16);");
+  40   1      }
+  41          /*************************************************
+  42                            显示灯状态
+  43          *************************************************/
+  44          void showLightState()
+  45          {
+  46   1        uart2Clear();
+  47   1        
+  48   1        if(door)
+  49   1          uart2SendChar("SBC(46);DCV16(275,220,'ON',16);");
+  50   1        else
+  51   1          uart2SendChar("SBC(46);DCV16(275,220,'OFF',16);");
+  52   1      }
+  53          /*************************************************
+  54                            显示工作时间
+C51 COMPILER V9.54   MAIN                                                                  05/29/2021 13:29:52 PAGE 2   
 
-  55          void showWork()
-  56          {
-  57   1        uart2Clear();
-  58   1        uart2AddChar("SBC(23);DCV16(178,225,'");
-  59   1        uart2AddChar(num_to_Str(workTime,-1));
-  60   1        uart2AddChar("分钟',16);");
-  61   1        uart2SendEnd();
-  62   1      }
-  63          /*************************************************
-  64                            串口1中断函数
-  65          *************************************************/
-  66          void ser() interrupt 4
-  67          {
-  68   1        uchar temp;
-  69   1        RI=0;
-  70   1        temp = SBUF;
-  71   1        if (flag)
-  72   1          return;
-  73   1        if (pos >= 100){
-  74   2          dFlag = 0;
-  75   2          pos = 0;
-  76   2        }
-  77   1        if(temp == ',')
-  78   1          temp = '.';
-  79   1        receive[pos++] = temp;
-  80   1        if (dFlag){
-  81   2          if(temp == 0x0a && pos > 2)
-  82   2            flag = 1;
-  83   2          else
-  84   2            pos = 0;
-  85   2          dFlag = 0;
-  86   2        } else{
-  87   2          if(temp == 0x0d)
-  88   2            dFlag = 1;
-  89   2          else if (temp == 0x0a)
-  90   2            pos = 0;
-  91   2        }
-  92   1      }
-  93          /*************************************************
-  94                              等待串口1返回
-  95          *************************************************/
-  96          void waitUart()
-  97          {
-  98   1        while(1)
-  99   1        {
- 100   2          if(flag){
- 101   3            flag = 0;
- 102   3            pos = 0;
- 103   3            break;
- 104   3          }
- 105   2        }
- 106   1      }
- 107          /*************************************************
- 108                              串口1事件
- 109          *************************************************/
- 110          void uartEvent()
- 111          {
- 112   1        if(strInclude(receive,"change",pos-2,6))
- 113   1              led5 = !led5;
- 114   1      }
- 115          /*************************************************
- 116                              连接服务器
-C51 COMPILER V9.54   MAIN                                                                  05/29/2021 11:41:49 PAGE 3   
+  55          *************************************************/
+  56          void showWork()
+  57          {
+  58   1        uart2Clear();
+  59   1        uart2AddChar("SBC(23);DCV16(178,225,'");
+  60   1        uart2AddChar(num_to_Str(workTime,-1));
+  61   1        uart2AddChar("分钟',16);");
+  62   1        uart2SendEnd();
+  63   1      }
+  64          /*************************************************
+  65                            串口1中断函数
+  66          *************************************************/
+  67          void ser() interrupt 4
+  68          {
+  69   1        uchar temp;
+  70   1        RI=0;
+  71   1        temp = SBUF;
+  72   1        if (flag)
+  73   1          return;
+  74   1        if (pos >= 100){
+  75   2          dFlag = 0;
+  76   2          pos = 0;
+  77   2        }
+  78   1        if(temp == ',')
+  79   1          temp = '.';
+  80   1        receive[pos++] = temp;
+  81   1        if (dFlag){
+  82   2          if(temp == 0x0a && pos > 2)
+  83   2            flag = 1;
+  84   2          else
+  85   2            pos = 0;
+  86   2          dFlag = 0;
+  87   2        } else{
+  88   2          if(temp == 0x0d)
+  89   2            dFlag = 1;
+  90   2          else if (temp == 0x0a)
+  91   2            pos = 0;
+  92   2        }
+  93   1      }
+  94          /*************************************************
+  95                              等待串口1返回
+  96          *************************************************/
+  97          void waitUart()
+  98          {
+  99   1        while(1)
+ 100   1        {
+ 101   2          if(flag){
+ 102   3            flag = 0;
+ 103   3            pos = 0;
+ 104   3            break;
+ 105   3          }
+ 106   2        }
+ 107   1      }
+ 108          /*************************************************
+ 109                              串口1事件
+ 110          *************************************************/
+ 111          void uartEvent()
+ 112          {
+ 113   1        if(strInclude(receive,"change",pos-2,6))
+ 114   1              led5 = !led5;
+ 115   1      }
+ 116          /*************************************************
+C51 COMPILER V9.54   MAIN                                                                  05/29/2021 13:29:52 PAGE 3   
 
- 117          *************************************************/
- 118          void connectService()
- 119          {
- 120   1        uartSend("AT+CIPMUX=1\r\n");
- 121   1        waitUart();
- 122   1        uartSend("AT+CIPSTART=0,\"TCP\",\"203.195.134.115\",7000\r\n");
- 123   1        waitUart();
- 124   1        uartSend("AT+CIPSEND=0,7\r\n");
- 125   1        waitUart();
- 126   1        uartSend("haha1\r\n");
- 127   1        waitUart();
- 128   1        delay1ms(1000);
- 129   1        uartSend("AT+CIPSEND=0,7\r\n");
- 130   1        waitUart();
- 131   1        uartSend("haha2\r\n");
- 132   1        waitUart();
- 133   1        delay1ms(1000);
- 134   1        uartSend("AT+CIPSEND=0,7\r\n");
- 135   1        waitUart();
- 136   1        uartSend("haha3\r\n");
- 137   1        waitUart();
- 138   1        delay1ms(1000);
- 139   1      }
- 140          /*************************************************
- 141                              串口2中断
- 142          *************************************************/
- 143          void uart2_isr()  interrupt 8
- 144          {
- 145   1        if(S2RI(-1))
- 146   1        {
- 147   2          S2RI(0);
- 148   2          if(S2BUF == '\n')
- 149   2            Busy = 0;
- 150   2      //    dat = S2BUF;
- 151   2      //    flag = 1;
- 152   2         }
- 153   1      }
- 154          /*************************************************
- 155                              串口屏是否忙
- 156          *************************************************/
- 157          void checkBusy()
- 158          {
- 159   1        Busy = 1;
- 160   1        while(Busy);
- 161   1      }
- 162          /*************************************************
- 163                              更新传感器数据
- 164          *************************************************/
- 165          void updataSensor()
- 166          {
- 167   1        showTemperature();checkBusy();
- 168   1        showPress();checkBusy();
- 169   1        showLight();checkBusy();
- 170   1        showWet();checkBusy();
- 171   1        showDoorState();checkBusy();
- 172   1        showLightState();checkBusy();
- 173   1        showWork();checkBusy();
- 174   1      }
- 175          /********************************************************************
- 176                                      主函数
- 177          *********************************************************************/    
- 178          void main()
-C51 COMPILER V9.54   MAIN                                                                  05/29/2021 11:41:49 PAGE 4   
+ 117                              连接服务器
+ 118          *************************************************/
+ 119          void connectService()
+ 120          {
+ 121   1        uartSend("AT+CIPMUX=1\r\n");
+ 122   1        waitUart();
+ 123   1        uartSend("AT+CIPSTART=0,\"TCP\",\"203.195.134.115\",7000\r\n");
+ 124   1        waitUart();
+ 125   1        uartSend("AT+CIPSEND=0,7\r\n");
+ 126   1        waitUart();
+ 127   1        uartSend("haha1\r\n");
+ 128   1        waitUart();
+ 129   1        delay1ms(1000);
+ 130   1        uartSend("AT+CIPSEND=0,7\r\n");
+ 131   1        waitUart();
+ 132   1        uartSend("haha2\r\n");
+ 133   1        waitUart();
+ 134   1        delay1ms(1000);
+ 135   1        uartSend("AT+CIPSEND=0,7\r\n");
+ 136   1        waitUart();
+ 137   1        uartSend("haha3\r\n");
+ 138   1        waitUart();
+ 139   1        delay1ms(1000);
+ 140   1      }
+ 141          /*************************************************
+ 142                              串口2中断
+ 143          *************************************************/
+ 144          void uart2_isr()  interrupt 8
+ 145          {
+ 146   1        if(S2RI(-1))
+ 147   1        {
+ 148   2          S2RI(0);
+ 149   2          if(S2BUF == '\n')
+ 150   2            Busy = 0;
+ 151   2      //    dat = S2BUF;
+ 152   2      //    flag = 1;
+ 153   2         }
+ 154   1      }
+ 155          /*************************************************
+ 156                              串口屏是否忙
+ 157          *************************************************/
+ 158          void checkBusy()
+ 159          {
+ 160   1        Busy = 1;
+ 161   1        while(Busy);
+ 162   1      }
+ 163          /*************************************************
+ 164                              更新传感器数据
+ 165          *************************************************/
+ 166          void updataSensor()
+ 167          {
+ 168   1        showTemperature();checkBusy();
+ 169   1        showPress();checkBusy();
+ 170   1        showLight();checkBusy();
+ 171   1        showWet();checkBusy();
+ 172   1        showDoorState();checkBusy();
+ 173   1        showLightState();checkBusy();
+ 174   1        showWork();checkBusy();
+ 175   1      }
+ 176          /********************************************************************
+ 177                                      主函数
+ 178          *********************************************************************/    
+C51 COMPILER V9.54   MAIN                                                                  05/29/2021 13:29:52 PAGE 4   
 
- 179          {
- 180   1        char a[3] = {0xc8,0xfd,'\0'};
+ 179          void main()
+ 180          {
  181   1        time0_init();
  182   1        uartInit();
  183   1      //  connectService();
@@ -205,93 +205,98 @@ line level    source
  189   1      //  uart2AddChar("");
  190   1      //  uart2SendEnd();
  191   1      //  pos = 0;
- 192   1        press_init();
+ 192   1      //  press_init();
  193   1      //  music_init();
  194   1        delay1ms(1000);
- 195   1        updataSensor();
+ 195   1      //  updataSensor();
  196   1        while(1)
  197   1        {
- 198   2      //    play_one(2);
- 199   2      //    led = !led;
- 200   2      //    delay1ms(2000);
- 201   2      //    
- 202   2          /*************
- 203   2            时钟更新事件
- 204   2          **************/
- 205   2          if(time_update_flag)
- 206   2          {
- 207   3            //uartSend_number(2021);
- 208   3            time_update();
- 209   3            showTime();checkBusy();
- 210   3            time_update_flag = 0;
- 211   3          }
- 212   2          /*************
- 213   2            传感器更新事件
- 214   2          **************/
- 215   2          if(sensor_flag)
- 216   2          {
- 217   3            updataSensor();
- 218   3            sensor_flag = 0;
- 219   3          }
- 220   2          /*************
- 221   2          湿度传感器
- 222   2          **************/
- 223   2      //    if(GetData())
- 224   2      //    {
- 225   2      //      uartSend(getWetStr());
- 226   2      //    }
- 227   2      //    delay1ms(2000);
- 228   2          
- 229   2          /*************
- 230   2          气压传感器
- 231   2          **************/
- 232   2      //    delay1ms(1000);
- 233   2      //    get_temperature();
- 234   2      //    uartSend("温度:");
- 235   2      //    uartSend(getTempStr());
- 236   2      //    get_pressure();
- 237   2      //    uartSend("压力:");
- 238   2      //    uartSend(getPressureStr());
- 239   2      //    delay1ms(1000);
- 240   2          
-C51 COMPILER V9.54   MAIN                                                                  05/29/2021 11:41:49 PAGE 5   
+ 198   2          if(scanMatricKey(0) != -1)
+ 199   2          {
+ 200   3            led5 = !led5;
+ 201   3            delay1ms(300);
+ 202   3          }
+ 203   2      //    play_one(2);
+ 204   2      //    led = !led;
+ 205   2      //    delay1ms(2000);
+ 206   2      //    
+ 207   2          /*************
+ 208   2            时钟更新事件
+ 209   2          **************/
+ 210   2      //    if(time_update_flag)
+ 211   2      //    {
+ 212   2      //      //uartSend_number(2021);
+ 213   2      //      time_update();
+ 214   2      //      showTime();checkBusy();
+ 215   2      //      time_update_flag = 0;
+ 216   2      //    }
+ 217   2          /*************
+ 218   2            传感器更新事件
+ 219   2          **************/
+ 220   2      //    if(sensor_flag)
+ 221   2      //    {
+ 222   2      //      updataSensor();
+ 223   2      //      sensor_flag = 0;
+ 224   2      //    }
+ 225   2          /*************
+ 226   2          湿度传感器
+ 227   2          **************/
+ 228   2      //    if(GetData())
+ 229   2      //    {
+ 230   2      //      uartSend(getWetStr());
+ 231   2      //    }
+ 232   2      //    delay1ms(2000);
+ 233   2          
+ 234   2          /*************
+ 235   2          气压传感器
+ 236   2          **************/
+ 237   2      //    delay1ms(1000);
+ 238   2      //    get_temperature();
+ 239   2      //    uartSend("温度:");
+ 240   2      //    uartSend(getTempStr());
+C51 COMPILER V9.54   MAIN                                                                  05/29/2021 13:29:52 PAGE 5   
 
- 241   2          
- 242   2          /*************
- 243   2            光照传感器
- 244   2          ****************/
- 245   2      //    light_start();
- 246   2      //    light_read();
- 247   2      //    uartSend("光照:");
- 248   2      //    uartSend(getLightStr());
- 249   2      //    led=!led;
- 250   2      //    delay1ms(1000);
- 251   2          
- 252   2          /*************
- 253   2            接收服务器数据
- 254   2          ****************/
- 255   2      //    if(flag)
- 256   2      //    {
- 257   2      //      uartEvent();
- 258   2      //      receive[pos++] = '\0';
- 259   2      ////      uartSend(receive);
- 260   2      //      uart2Clear();
- 261   2      //      uart2AddChar("CLR(1);");
- 262   2      //      uart2AddChar("DCV16(30,30,'");uart2AddChar(receive);uart2AddChar("',18);");
- 263   2      //      uart2SendEnd();
- 264   2      //      pos = 0;
- 265   2      //      flag = 0;
- 266   2      //    }
- 267   2        }
- 268   1      }
+ 241   2      //    get_pressure();
+ 242   2      //    uartSend("压力:");
+ 243   2      //    uartSend(getPressureStr());
+ 244   2      //    delay1ms(1000);
+ 245   2          
+ 246   2          
+ 247   2          /*************
+ 248   2            光照传感器
+ 249   2          ****************/
+ 250   2      //    light_start();
+ 251   2      //    light_read();
+ 252   2      //    uartSend("光照:");
+ 253   2      //    uartSend(getLightStr());
+ 254   2      //    led=!led;
+ 255   2      //    delay1ms(1000);
+ 256   2          
+ 257   2          /*************
+ 258   2            接收服务器数据
+ 259   2          ****************/
+ 260   2      //    if(flag)
+ 261   2      //    {
+ 262   2      //      uartEvent();
+ 263   2      //      receive[pos++] = '\0';
+ 264   2      ////      uartSend(receive);
+ 265   2      //      uart2Clear();
+ 266   2      //      uart2AddChar("CLR(1);");
+ 267   2      //      uart2AddChar("DCV16(30,30,'");uart2AddChar(receive);uart2AddChar("',18);");
+ 268   2      //      uart2SendEnd();
+ 269   2      //      pos = 0;
+ 270   2      //      flag = 0;
+ 271   2      //    }
+ 272   2        }
+ 273   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    600    ----
-   CONSTANT SIZE    =    319    ----
+   CODE SIZE        =    571    ----
+   CONSTANT SIZE    =    316    ----
    XDATA SIZE       =    102    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      1       3
+   DATA SIZE        =      1    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      5    ----
    EDATA SIZE       =   ----    ----
