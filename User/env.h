@@ -17,4 +17,5 @@ void showTemperature();
 void showPress();
 void showLight();
 void showWet();
+char * getAllEnv();
 #endif

@@ -4,6 +4,7 @@
 #include "timer.h"
 #include "music.h"
 #include "key.h"
+#include <stdio.h>
 #define uchar unsigned char//宏定义无符号字符型
 #define uint unsigned int  //宏定义无符号整型
 /********************************************************************
@@ -13,6 +14,7 @@ bit flag = 0;
 bit dFlag = 0;
 sbit led = P1^1;
 sbit led5 = P1^5;
+sbit led7 = P1^7;
 bit Busy = 0;
 xdata uchar receive[100];
 bit door = 0, light = 0;
@@ -101,17 +103,84 @@ void waitUart()
 		if(flag){
 			flag = 0;
 			pos = 0;
+			delay1ms(500);
 			break;
 		}
 	}
 }
 /*************************************************
+							向门发送数据
+*************************************************/
+void sendToDoor(uchar * s)
+{
+	int len = 0;
+	uchar temp[30] = {'\0'};
+	while(s[len++] != '\0');
+	len-= 1;
+	sprintf(temp, "AT+CIPSEND=1,%d\r\n",len);
+	uartSend(temp);
+	waitUart();
+	uartSend(s);
+	waitUart();
+}
+/*************************************************
+							向灯发送数据
+*************************************************/
+void sendToLight(uchar * s)
+{
+	int len = 0;
+	uchar temp[30] = {'\0'};
+	while(s[len++] != '\0');
+	len-= 1;
+	sprintf(temp, "AT+CIPSEND=2,%d\r\n",len);
+	uartSend(temp);
+	waitUart();
+	uartSend(s);
+	waitUart();
+}
+
+/*************************************************
                     串口1事件
 *************************************************/
 void uartEvent()
 {
-	if(strInclude(receive,"change",pos-2,6))
-				led5 = !led5;
+	if(strInclude(receive,"doorOn",pos-2,6))
+	{
+		led7 = !led7;
+		sendToDoor("open\r\n");
+	}
+	else if(strInclude(receive,"lightOn",pos-2,7))
+	{
+		led7 = !led7;
+		sendToLight("open\r\n");
+	}
+	else if (strInclude(receive,"lightClose",pos-2,10))
+	{
+		led7 = !led7;
+		sendToLight("close\r\n");
+	}
+	else if (strInclude(receive,"class",pos-2,5))
+	{
+		parseClass(receive);
+		led7 = !led7;
+	}
+	else if (strInclude(receive,"change",pos-2,6))
+		led7 = !led7;
+}
+/*************************************************
+							向服务器发送数据
+*************************************************/
+void sendToServe(uchar * s)
+{
+	int len = 0;
+	uchar temp[30] = {'\0'};
+	while(s[len++] != '\0');
+	len-= 1;
+	sprintf(temp, "AT+CIPSEND=0,%d\r\n",len);
+	uartSend(temp);
+	waitUart();
+	uartSend(s);
+	waitUart();
 }
 /*************************************************
                     连接服务器
@@ -121,22 +190,11 @@ void connectService()
 	uartSend("AT+CIPMUX=1\r\n");
 	waitUart();
 	uartSend("AT+CIPSTART=0,\"TCP\",\"203.195.134.115\",7000\r\n");
+	//uartSend("AT+CIPSTART=0,\"TCP\",\"192.168.123.210\",7000\r\n");
 	waitUart();
-	uartSend("AT+CIPSEND=0,7\r\n");
+	uartSend("AT+CIPSERVER=1,8080\r\n");
 	waitUart();
-	uartSend("haha1\r\n");
-	waitUart();
-	delay1ms(1000);
-	uartSend("AT+CIPSEND=0,7\r\n");
-	waitUart();
-	uartSend("haha2\r\n");
-	waitUart();
-	delay1ms(1000);
-	uartSend("AT+CIPSEND=0,7\r\n");
-	waitUart();
-	uartSend("haha3\r\n");
-	waitUart();
-	delay1ms(1000);
+	sendToServe("haha123\r\n");
 }
 /*************************************************
                     串口2中断
@@ -165,41 +223,46 @@ void checkBusy()
 *************************************************/
 void updataSensor()
 {
-	showTemperature();checkBusy();
-	showPress();checkBusy();
-	showLight();checkBusy();
-	showWet();checkBusy();
-	showDoorState();checkBusy();
-	showLightState();checkBusy();
-	showWork();checkBusy();
+	showTemperature();//checkBusy();
+	showPress();//checkBusy();
+	showLight();//checkBusy();
+	showWet();//checkBusy();
+	showDoorState();//checkBusy();
+	showLightState();//checkBusy();
+	showWork();//checkBusy();
+	if(!flag)
+		sendToServe(getAllEnv());
 }
 /********************************************************************
                             主函数
 *********************************************************************/   	
 void main()
 {
+	delay1ms(4000);
 	time0_init();
 	uartInit();
-//	connectService();
+	connectService();
 	uart2Init();
 	uart2Clear();
 	uart2AddChar("CLR(16);DIR(3);FSIMG(2097152,0,0,320,240,0)");
 	uart2SendEnd();
 	delay1ms(1000);
-//	uart2AddChar("");
-//	uart2SendEnd();
-//	pos = 0;
-//	press_init();
-//	music_init();
-	delay1ms(1000);
-//	updataSensor();
+	uart2AddChar("");
+	uart2SendEnd();
+	pos = 0;
+	press_init();
+	music_init();
+	updataSensor();
+	led7 = 0;
 	while(1)
 	{
-		if(scanMatricKey(0) != -1)
-		{
-			led5 = !led5;
-			delay1ms(300);
-		}
+//		led5 = !led5;
+//		delay1ms(1000);
+//		if(scanMatricKey(0) != -1)
+//		{
+//			led5 = !led5;
+//			delay1ms(300);
+//		}
 //		play_one(2);
 //		led = !led;
 //		delay1ms(2000);
@@ -207,21 +270,20 @@ void main()
 		/*************
 			时钟更新事件
 		**************/
-//		if(time_update_flag)
-//		{
-//			//uartSend_number(2021);
-//			time_update();
-//			showTime();checkBusy();
-//			time_update_flag = 0;
-//		}
+		if(time_update_flag)
+		{
+			time_update();
+			showTime();//checkBusy();
+			time_update_flag = 0;
+		}
 		/*************
 			传感器更新事件
 		**************/
-//		if(sensor_flag)
-//		{
-//			updataSensor();
-//			sensor_flag = 0;
-//		}
+		if(sensor_flag)
+		{
+			updataSensor();
+			sensor_flag = 0;
+		}
 		/*************
 		湿度传感器
 		**************/
@@ -257,17 +319,17 @@ void main()
 		/*************
 		  接收服务器数据
 		****************/
-//		if(flag)
-//		{
-//			uartEvent();
-//			receive[pos++] = '\0';
-////			uartSend(receive);
+		if(flag)
+		{
+			uartEvent();
+			receive[pos++] = '\0';
+//			uartSend(receive);
 //			uart2Clear();
 //			uart2AddChar("CLR(1);");
 //			uart2AddChar("DCV16(30,30,'");uart2AddChar(receive);uart2AddChar("',18);");
 //			uart2SendEnd();
-//			pos = 0;
-//			flag = 0;
-//		}
+			pos = 0;
+			flag = 0;
+		}
 	}
 }

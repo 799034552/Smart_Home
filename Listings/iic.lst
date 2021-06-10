@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   IIC                                                                   05/25/2021 09:50:15 PAGE 1   
+C51 COMPILER V9.54   IIC                                                                   06/10/2021 15:58:45 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE IIC
@@ -62,7 +62,7 @@ line level    source
   52          void init() {
   53   1        sda=1;
   54   1        delay();
-C51 COMPILER V9.54   IIC                                                                   05/25/2021 09:50:15 PAGE 2   
+C51 COMPILER V9.54   IIC                                                                   06/10/2021 15:58:45 PAGE 2   
 
   55   1        scl=1;
   56   1        delay();

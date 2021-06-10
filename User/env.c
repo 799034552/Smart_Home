@@ -1,6 +1,7 @@
 #include "env.h"
 #include "uart.h"
 #include "math.h"
+#include <stdio.h>
 sbit wet = P2^2;
 #define light_address 0x46                //光照传感器
 #define	BMP085_SlaveAddress   0xee        //气压传感器
@@ -16,14 +17,15 @@ float temp;
 ******/
 xdata short ac1,ac2,ac3,b1,b2,mb,mc,md;
 xdata unsigned short ac4,ac5,ac6;
-xdata long  temperature,pressure;
+long  temperature,pressure;
 /*****
 湿度传感器
 ******/
-xdata uchar wet_data = 0;
+uchar wet_data = 0;
 xdata uchar   ge,shi,bai,qian,wan,shiwan;
 xdata uchar res[] = "111111\r\n"; //结果
 
+xdata char temp1[35] = {'\0'};
 
 //------延迟函数------------
 void delay(uint t)		//@11.0592MHz
@@ -328,7 +330,6 @@ void showTemperature()
 	get_temperature();
 	getTempStr();
 	uart2Clear();
-//	uart2AddChar("SBC(1);DCV24(255,50,'25℃',16);");
 	uart2AddChar("SBC(1);DCV24(245,50,'");
 	uart2AddCharLen(res+3,1);
 	uart2AddCharLen(res+4,1);
@@ -336,7 +337,6 @@ void showTemperature()
 	uart2AddCharLen(res+5,1);
 	uart2AddChar("℃',16);");
 	uart2SendEnd();
-	
 }
 void showPress()
 {
@@ -378,5 +378,17 @@ void showWet()
 			uart2AddChar("%',16);");
 			uart2SendEnd();
 		}
+}
+char * getAllEnv()
+{
+	getTempStr();
+	sprintf(temp1,"%s;",res);
+	getPressureStr();
+	sprintf(temp1,"%s%s;",temp1,res);
+	getWetStr();
+	sprintf(temp1,"%s%s;",temp1,res);
+	getLightStr();
+	sprintf(temp1,"%s%s;",temp1,res);
+	return temp1;
 }
 

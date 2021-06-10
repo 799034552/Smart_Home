@@ -82,14 +82,14 @@ void uartSend(char*s)
 	uchar len = 0;
 	while(s[len++] != '\0');
 	len-=1;
-	ES = 0;
+//	ES = 0;
 	for(i = 0; i < len;i++)
 	{
 		SBUF = s[i];
 		while(!TI);
 		TI = 0;
 	}
-	ES = 1;
+//	ES = 1;
 }
 void uartSend_number(long num)
 {

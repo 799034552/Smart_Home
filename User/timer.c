@@ -15,7 +15,7 @@ code char weekDays[][7] = {"ĞÇÆÚÒ»","ĞÇÆÚ¶ş","ĞÇÆÚ\xc8\xfd","ĞÇÆÚËÄ","ĞÇÆÚÎå","Ğ
 bit time_update_flag = 0;
 bit sensor_flag = 0;
 xdata uint count_down_time= 0;
-xdata char mempool[256];
+xdata char mempool[200];
 xdata char timetable[5][5][18];
 code uchar class_hour[] = {7, 9, 14, 16,18};
 code uchar class_minute[] = {50, 50, 20, 00,50};
@@ -171,22 +171,7 @@ void time_update()
 		minute++;
 	} else 
 		changeToNowTime(nowTime);
-//	uartSend_number(2021);
-//	uartSend("-");
-//	uartSend_number(month);
-//	uartSend("-");
-//	uartSend_number(day);
-//	uartSend(" ");
-//	uartSend_number(hour);
-//	uartSend(":");
-//	uartSend_number(minute);
-//	uartSend(":");
-//	uartSend_number(second);
-//	uartSend(":");
-//	uartSend(weekDays[weekDay]);
-//	uartSend("\r\n");
-////	showClock();
-//	checkClock();
+	checkClock();
 }
 /*************************************************
                     Ôö¼ÓÄÖÖÓ
