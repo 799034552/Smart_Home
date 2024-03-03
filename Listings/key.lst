@@ -1,120 +1,159 @@
-C51 COMPILER V9.54   KEY                                                                   06/10/2021 15:58:46 PAGE 1   
+C51 COMPILER V9.60.0.0   KEY                                                               07/05/2021 18:54:42 PAGE 1   
 
 
-C51 COMPILER V9.54, COMPILATION OF MODULE KEY
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE KEY
 OBJECT MODULE PLACED IN .\Objects\key.obj
-COMPILER INVOKED BY: E:\C\keil\C51\BIN\C51.EXE User\key.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(.\User) DEBUG PRINT(.\Lis
-                    -tings\key.lst) TABS(2) OBJECT(.\Objects\key.obj)
+COMPILER INVOKED BY: D:\work\keilc51\C51\BIN\C51.EXE User\key.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(.\User) DEBUG PRINT
+                    -(.\Listings\key.lst) TABS(2) OBJECT(.\Objects\key.obj)
 
 line level    source
 
    1          #include "key.h"
-   2          #include <intrins.h>
-   3          #define uint unsigned int 
-   4          #define uchar unsigned char 
-   5          uchar keys[] = {3,4,5,6};
-   6          /*****************
-   7           延迟
-   8          ******************/
-   9          void Delay10ms()
-  10          {
-  11   1        unsigned char i, j;
-  12   1      
-  13   1        _nop_();
+   2          #include "STC12C5A60S2.h"
+   3          #include <intrins.h>
+   4          #define uint unsigned int 
+   5          #define uchar unsigned char 
+   6          uchar keys[] = {3,4,5,6};
+   7          /*****************
+   8           延迟
+   9          ******************/
+  10          void Delay10ms()
+  11          {
+  12   1        unsigned char i, j;
+  13   1      
   14   1        _nop_();
-  15   1        i = 108;
-  16   1        j = 144;
-  17   1        do
-  18   1        {
-  19   2          while (--j);
-  20   2        } while (--i);
-  21   1      }
-  22          /*****************
-  23           获取某个p口的某个电平值
-  24          ******************/
-  25          bit getBit(uchar p, uchar i) {
-  26   1        uchar mask = 0x01 << i;
-  27   1        switch(p){
-  28   2          case 0:
-  29   2           return ((P0 & mask) == 0?0:1);
-  30   2          case 1: 
-  31   2            return ((P1 & mask) == 0?0:1);
-  32   2          case 2: 
-  33   2            return ((P2 & mask) == 0?0:1);
-  34   2          case 3: 
-  35   2            return ((P3 & mask) == 0?0:1);
-  36   2        }
-  37   1        return 0;
-  38   1      }
-  39          /*****************
-  40           扫描按键
-  41          ******************/
-  42          char scanKey(bit longAble)
-  43          {
-  44   1        static bit be_state = 0;
-  45   1        uchar i;
-  46   1        if(longAble)
-  47   1          be_state = 1;
-  48   1        for(i = 0; i < 4; i++)
-  49   1        {
-  50   2          if(getBit(3,keys[i]) == 0)
-  51   2          {
-  52   3            Delay10ms();
-  53   3            if(getBit(3,keys[i]) == 0)
-  54   3            {
-C51 COMPILER V9.54   KEY                                                                   06/10/2021 15:58:46 PAGE 2   
+  15   1        _nop_();
+  16   1        i = 108;
+  17   1        j = 144;
+  18   1        do
+  19   1        {
+  20   2          while (--j);
+  21   2        } while (--i);
+  22   1      }
+  23          /*****************
+  24           获取某个p口的某个电平值
+  25          ******************/
+  26          bit getBit(uchar p, uchar i) {
+  27   1        uchar mask = 0x01 << i;
+  28   1        switch(p){
+  29   2          case 0:
+  30   2           return ((P0 & mask) == 0?0:1);
+  31   2          case 1: 
+  32   2            return ((P1 & mask) == 0?0:1);
+  33   2          case 2: 
+  34   2            return ((P2 & mask) == 0?0:1);
+  35   2          case 3: 
+  36   2            return ((P3 & mask) == 0?0:1);
+  37   2        }
+  38   1        return 0;
+  39   1      }
+  40          void setBit(uchar p, uchar i, bit state)
+  41          {
+  42   1        uchar mask;
+  43   1        if (state) {
+  44   2          mask = 0x01 << i;
+  45   2          switch(p){
+  46   3            case 0:
+  47   3              P0 |= mask;
+  48   3              break;
+  49   3            case 1: 
+  50   3              P1 |= mask;
+  51   3              break;
+  52   3            case 2: 
+  53   3              P2 |= mask;
+  54   3              break;
+C51 COMPILER V9.60.0.0   KEY                                                               07/05/2021 18:54:42 PAGE 2   
 
-  55   4              if(be_state != 0)
-  56   4                return -1;
-  57   4              be_state = 1;
-  58   4              return i;
-  59   4            }
-  60   3          }
-  61   2        }
-  62   1        be_state = 0;
-  63   1        return -1;
-  64   1      }
-  65          /*****************
-  66           扫描矩阵按键
-  67          ******************/
-  68          char scanMatricKey(bit longAble) {
-  69   1        static bit be_state = 0;
-  70   1        uchar temp, out = 0xfe,mask = 0xef,i, j;
-  71   1        if(longAble)
-  72   1          be_state = 1;
-  73   1        for (i = 0; i < 4; i++) {
-  74   2          P3 = _crol_(out, i);
-  75   2          temp = P3 & 0xf0;
-  76   2          if (temp != 0xf0) {
-  77   3            Delay10ms();
-  78   3            P3 = _crol_(out, i);
-  79   3            temp = P3 & 0xf0;
-  80   3            if (temp != 0xf0) {
-  81   4              temp = P3;
-  82   4              for (j = 0; j < 4; j++) {
-  83   5                 if (temp == ((_crol_(out, i) & 0x0f) | (_crol_(mask, j) & 0xf0))) {
-  84   6                    if(be_state != 0)
-  85   6                      return -1;
-  86   6                    be_state = 1;
-  87   6                    return i*4+j;
-  88   6                 }
-  89   5              }
-  90   4            }
-  91   3          }
-  92   2        }
-  93   1        be_state = 0;
-  94   1        return -1;
-  95   1      }
+  55   3            case 3: 
+  56   3              P3 |= mask;
+  57   3              break;
+  58   3          }
+  59   2        } else {
+  60   2          mask = 0xfe << i;
+  61   2          switch(p){
+  62   3            case 0:
+  63   3              P0 &= mask;break;
+  64   3            case 1: 
+  65   3              P1 &= mask;break;
+  66   3            case 2: 
+  67   3              P2 &= mask;break;
+  68   3            case 3: 
+  69   3              P3 &= mask;break;
+  70   3          }
+  71   2        }
+  72   1      }
+  73          /*****************
+  74           扫描按键
+  75          ******************/
+  76          sbit tt = P0^7;
+  77          char scanKey(bit longAble)
+  78          {
+  79   1        uchar col[] = {4};
+  80   1        uchar i,j,t=0xff;
+  81   1        if (!tt)
+  82   1          t = 0x7f;
+  83   1        for(i = 0; i < 3; i++)
+  84   1        {
+  85   2          P0 = _crol_(0xef,i)& t;
+  86   2          for(j = 0;j < 4; j++)
+  87   2          {
+  88   3            if (getBit(0,j) == 0)
+  89   3            {
+  90   4              Delay10ms();
+  91   4              if (getBit(0,j) == 0)
+  92   4              {
+  93   5                if (longAble == 0)
+  94   5                  while(getBit(0,j) == 0);
+  95   5                return j*3 + i;
+  96   5              }
+  97   4            }
+  98   3          }
+  99   2        }
+ 100   1        return -1;
+ 101   1      }
+ 102          /*****************
+ 103           扫描矩阵按键
+ 104          ******************/
+ 105          char scanMatricKey(bit longAble) {
+ 106   1        static bit be_state = 0;
+ 107   1        uchar temp, out = 0xfe,mask = 0xef,i, j;
+ 108   1        if(longAble)
+ 109   1          be_state = 1;
+ 110   1        for (i = 0; i < 4; i++) {
+ 111   2          P3 = _crol_(out, i);
+ 112   2          temp = P3 & 0xf0;
+ 113   2          if (temp != 0xf0) {
+ 114   3            Delay10ms();
+ 115   3            P3 = _crol_(out, i);
+ 116   3            temp = P3 & 0xf0;
+C51 COMPILER V9.60.0.0   KEY                                                               07/05/2021 18:54:42 PAGE 3   
+
+ 117   3            if (temp != 0xf0) {
+ 118   4              temp = P3;
+ 119   4              for (j = 0; j < 4; j++) {
+ 120   5                 if (temp == ((_crol_(out, i) & 0x0f) | (_crol_(mask, j) & 0xf0))) {
+ 121   6                    if(be_state != 0)
+ 122   6                      return -1;
+ 123   6                    be_state = 1;
+ 124   6                    return i*4+j;
+ 125   6                 }
+ 126   5              }
+ 127   4            }
+ 128   3          }
+ 129   2        }
+ 130   1        be_state = 0;
+ 131   1        return -1;
+ 132   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    244    ----
-   CONSTANT SIZE    =   ----    ----
+   CODE SIZE        =    413    ----
+   CONSTANT SIZE    =      1    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      4    ----
+   DATA SIZE        =      4       1
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =      2       2
+   BIT SIZE         =      1       3
    EDATA SIZE       =   ----    ----
    HDATA SIZE       =   ----    ----
    XDATA CONST SIZE =   ----    ----

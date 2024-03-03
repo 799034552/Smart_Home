@@ -4,7 +4,10 @@
 ".\Objects\env.obj",
 ".\Objects\timer.obj",
 ".\Objects\music.obj",
-".\Objects\key.obj" 
+".\Objects\key.obj",
+".\Objects\clock.obj",
+".\Objects\eeprom.obj",
+".\Objects\ADC.obj" 
 TO ".\Objects\123" 
 
 PRINT(".\Listings\123.map") REMOVEUNUSED 

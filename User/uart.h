@@ -2,6 +2,7 @@
 #define __UART_H_
 #include "STC12C5A60S2.h"
 #define uchar unsigned char
+extern bit Busy;
 void uart2Init(void);
 unsigned char ES2(char b);
 unsigned char S2RI(char b);
@@ -17,4 +18,5 @@ void uartSend_number(long num);
 bit strInclude(uchar*s1,uchar*s2,char len1, char len2);
 char* num_to_Str(long num, char want_bit);
 void uart2AddCharLen(char* s, uchar len);
+void checkBusy();
 #endif

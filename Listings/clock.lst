@@ -1,0 +1,285 @@
+C51 COMPILER V9.60.0.0   CLOCK                                                             07/05/2021 21:34:43 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE CLOCK
+OBJECT MODULE PLACED IN .\Objects\clock.obj
+COMPILER INVOKED BY: D:\work\keilc51\C51\BIN\C51.EXE User\clock.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(.\User) DEBUG PRI
+                    -NT(.\Listings\clock.lst) TABS(2) OBJECT(.\Objects\clock.obj)
+
+line level    source
+
+   1          #include "clock.h"
+   2          #include "key.h"
+   3          #include "eeprom.h"
+   4          #include "uart.h"
+   5          #include "timer.h"
+   6          #include <intrins.h>
+   7          #define uint unsigned int
+   8          #define uchar unsigned char
+   9          bit uiflag = 0;
+  10          char bflag,key,num1 = 0;
+  11          xdata uchar xaxis[3] = {240,205,170};
+  12          xdata uchar yaxis[5] = {65,90,115,140,165};
+  13          char xdata hour1[5] = {0};
+  14          char xdata minute1[5] = {0};
+  15          char xdata second1[5] = {0};
+  16          uint  address1 = 0x0000;  // 属于第一个扇区
+  17          uint  address2 = 0x0200;  // 属于第二个扇区
+  18          void read_time(uchar num1);
+  19          void write_time(uchar num1);
+  20          
+  21          void delay1(uint t)   //@11.0592MHz
+  22          {
+  23   1        unsigned char i, j;
+  24   1          uint a;
+  25   1          for(a=0;a<t;a++)
+  26   1          {
+  27   2              _nop_();
+  28   2              i = 10;
+  29   2              j = 190;
+  30   2              do
+  31   2              {
+  32   3                  while (--j);
+  33   3              } while (--i);
+  34   2          }
+  35   1      }
+  36          
+  37          void Show_onebit(uchar num, uchar bflag1, uchar time)
+  38          {
+  39   1        if((num == num1) && (bflag1 == bflag)) //选中标记
+  40   1        {
+  41   2          uart2AddChar("SBC(51);DCV24(");
+  42   2          uart2AddChar(num_to_Str(xaxis[bflag1],-1));
+  43   2          uart2AddChar(",");
+  44   2          uart2AddChar(num_to_Str(yaxis[num],-1));
+  45   2          uart2AddChar(",'");
+  46   2          uart2AddChar(num_to_Str(time,2));
+  47   2          if(bflag1 > 0)
+  48   2          {
+  49   3            uart2AddChar(":");
+  50   3          }
+  51   2          uart2AddChar("',30);");
+  52   2        }
+  53   1        else
+  54   1        {
+C51 COMPILER V9.60.0.0   CLOCK                                                             07/05/2021 21:34:43 PAGE 2   
+
+  55   2          uart2AddChar("SBC(51);DCV24(");
+  56   2          uart2AddChar(num_to_Str(xaxis[bflag1],-1));
+  57   2          uart2AddChar(",");
+  58   2          uart2AddChar(num_to_Str(yaxis[num],-1));
+  59   2          uart2AddChar(",'");
+  60   2          uart2AddChar(num_to_Str(time,2));
+  61   2          if(bflag1 > 0)
+  62   2          {
+  63   3            uart2AddChar(":");
+  64   3          }
+  65   2          uart2AddChar("',16);");
+  66   2        }
+  67   1      }
+  68          
+  69          void Show_oneclock(uchar num, uchar hour, uchar minute, uchar second)
+  70          {
+  71   1        uart2Clear();
+  72   1        Show_onebit(num,2,hour);
+  73   1        Show_onebit(num,1,minute);
+  74   1        Show_onebit(num,0,second);
+  75   1        uart2SendEnd();
+  76   1        checkBusy();
+  77   1      }
+  78          
+  79          void setclock()
+  80          { 
+  81   1        uint i;
+  82   1        num1 = Byte_Read(address1);//选中的闹钟号
+  83   1        for( i = 0; i < 5; i ++) //读eeprom的五个时钟
+  84   1        {
+  85   2          read_time(i);
+  86   2        }
+  87   1        do //键盘扫描
+  88   1        {
+  89   2          //串口屏显示闹钟
+  90   2          if(uiflag != 0)
+  91   2          {
+  92   3      //    uart2AddChar("CLR(51);DIR(3);");
+  93   3      //    uart2SendEnd();
+  94   3      //    checkBusy();
+  95   3            for(i = 0; i < 5; i++)
+  96   3            {
+  97   4              Show_oneclock(i,hour1[i],minute1[i],second1[i]);
+  98   4            }
+  99   3          }
+ 100   2          do
+ 101   2          {
+ 102   3            key = scanKey(0);
+ 103   3          }while(key == -1);
+ 104   2          switch(key)
+ 105   2          {
+ 106   3            case 2: if(num1 > 0)  //上限 上
+ 107   3                    num1--;
+ 108   3                    break;
+ 109   3            case 10: if(num1 < 4) //下
+ 110   3                    num1++;
+ 111   3                    break;
+ 112   3            case 5: bflag++;//光标左移    左
+ 113   3                    if(bflag == 3) bflag = 0;
+ 114   3                    break;
+ 115   3            case 9: uiflag = 0;
+ 116   3                    uart2Clear(); //背景显示
+C51 COMPILER V9.60.0.0   CLOCK                                                             07/05/2021 21:34:43 PAGE 3   
+
+ 117   3                    uart2AddChar("CLR(16);DIR(3);FSIMG(2097152,0,0,320,240,0)");
+ 118   3                    uart2SendEnd();
+ 119   3                    checkBusy();
+ 120   3                    break;
+ 121   3            case 4: bflag--;//光标右移    右
+ 122   3                    if(bflag == -1) bflag = 2;
+ 123   3                    break;
+ 124   3        }
+ 125   2        }while(key != 7 && uiflag == 1); //确认键
+ 126   1        do
+ 127   1        {
+ 128   2          if(uiflag != 0)
+ 129   2          {
+ 130   3            for(i = 0; i < 5; i++)
+ 131   3            {
+ 132   4              Show_oneclock(i,hour1[i],minute1[i],second1[i]);
+ 133   4            } 
+ 134   3          }
+ 135   2          do
+ 136   2          {
+ 137   3            key = scanKey(1);
+ 138   3          }while(key == -1);
+ 139   2          switch(key)
+ 140   2          {
+ 141   3            case 9: uiflag = 0;
+ 142   3                    uart2Clear(); //背景显示
+ 143   3                    uart2AddChar("CLR(16);DIR(3);FSIMG(2097152,0,0,320,240,0)");
+ 144   3                    uart2SendEnd();
+ 145   3                    checkBusy();
+ 146   3          case 2:
+ 147   3            switch(bflag) //增加
+ 148   3            {
+ 149   4            case 0: second1[num1] ++; //秒
+ 150   4                if(second1[num1] > 59) second1[num1] = 0;
+ 151   4                break;
+ 152   4            case 1: minute1[num1]++;  //分
+ 153   4                if(minute1[num1] > 59) minute1[num1] = 0;
+ 154   4                break;
+ 155   4            case 2: hour1[num1]++;    //时
+ 156   4                if(hour1[num1] > 24) hour1[num1] = 0;
+ 157   4                break;
+ 158   4            }
+ 159   3            break;
+ 160   3          case 10:
+ 161   3            switch(bflag) //减小
+ 162   3            {
+ 163   4            case 0: second1[num1]--;
+ 164   4                if(second1[num1] < 0) second1[num1] = 59;
+ 165   4                break;
+ 166   4            case 1: minute1[num1]--;
+ 167   4                if(minute1[num1] < 0) minute1[num1] = 59;
+ 168   4                break;
+ 169   4            case 2: hour1[num1]--;
+ 170   4                if(hour1[num1] < 0) hour1[num1] = 23;
+ 171   4                break;
+ 172   4            }
+ 173   3            break;
+ 174   3          }
+ 175   2        }
+ 176   1        while(key != 7 && uiflag == 1); 
+ 177   1        Sector_Erase(address1);  
+ 178   1        delay1(50);
+C51 COMPILER V9.60.0.0   CLOCK                                                             07/05/2021 21:34:43 PAGE 4   
+
+ 179   1        Byte_Program(address1, num1);
+ 180   1        delay1(50);
+ 181   1        Byte_Program(address1+16,0x00);
+ 182   1        delay1(50);
+ 183   1        for(i = 0; i < 5; i++) //写eeprom的五个时钟
+ 184   1        {
+ 185   2          write_time(i);
+ 186   2        }
+ 187   1      }
+ 188          
+ 189          void updateclock()
+ 190          {
+ 191   1        uchar i,hour0,second0,minute0;
+ 192   1        for( i = 1; i < 6;i++)
+ 193   1        {
+ 194   2          deleteClock(i);
+ 195   2        }
+ 196   1        for( i = 0; i < 5;i++) //更新闹钟
+ 197   1        {
+ 198   2          hour0 = Byte_Read(address1+3*i+1);
+ 199   2          minute0 = Byte_Read(address1+3*i+2);
+ 200   2          second0 = Byte_Read(address1+3*i+3);
+ 201   2          addClock(hour0,minute0,second0,0x00);
+ 202   2        }
+ 203   1      }
+ 204          
+ 205          void transfer()
+ 206          {
+ 207   1       key = scanKey(0);
+ 208   1       if(key == 9) //跳转按钮按下
+ 209   1       {
+ 210   2        uiflag = ~uiflag; //跳转标志位
+ 211   2       }
+ 212   1      }
+ 213          
+ 214          void read_time(uchar num1)
+ 215          {
+ 216   1        hour1[num1] = Byte_Read(address1+num1*3+1);
+ 217   1        delay1(50);
+ 218   1      //  if(hour1[num1] > 23) {hour1[num1] = 0;}
+ 219   1        minute1[num1] = Byte_Read(address1+num1*3+2);
+ 220   1        delay1(50);
+ 221   1      //  if(minute1[num1] > 59) {minute1[num1] = 0;}
+ 222   1        second1[num1] = Byte_Read(address1+num1*3+3);
+ 223   1        delay1(50);
+ 224   1      //  if(second1[num1] > 59) {second1[num1] = 0;}
+ 225   1      }
+ 226          
+ 227          void write_time(uchar num1)
+ 228          {
+ 229   1        Byte_Program(address1+num1*3+1, hour1[num1]);
+ 230   1        delay1(50);
+ 231   1        Byte_Program(address1+num1*3+2, minute1[num1]);
+ 232   1        delay1(50);
+ 233   1        Byte_Program(address1+num1*3+3, second1[num1]);
+ 234   1        delay1(50);
+ 235   1      }
+ 236          
+ 237          void clock_init()
+ 238          { 
+ 239   1        uchar i,flag;
+ 240   1        flag = Byte_Read(address1+16);
+C51 COMPILER V9.60.0.0   CLOCK                                                             07/05/2021 21:34:43 PAGE 5   
+
+ 241   1        if(flag != 0)
+ 242   1        {
+ 243   2          for(i = 0; i < 17; i++)
+ 244   2          {
+ 245   3            Byte_Program(address1+i,0);
+ 246   3            delay1(50);
+ 247   3          }
+ 248   2        }
+ 249   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1654    ----
+   CONSTANT SIZE    =     80    ----
+   XDATA SIZE       =     23    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      7      16
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

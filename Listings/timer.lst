@@ -1,354 +1,460 @@
-C51 COMPILER V9.54   TIMER                                                                 06/10/2021 16:03:54 PAGE 1   
+C51 COMPILER V9.60.0.0   TIMER                                                             07/05/2021 21:39:53 PAGE 1   
 
 
-C51 COMPILER V9.54, COMPILATION OF MODULE TIMER
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE TIMER
 OBJECT MODULE PLACED IN .\Objects\timer.obj
-COMPILER INVOKED BY: E:\C\keil\C51\BIN\C51.EXE User\timer.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(.\User) DEBUG PRINT(.\L
-                    -istings\timer.lst) TABS(2) OBJECT(.\Objects\timer.obj)
+COMPILER INVOKED BY: D:\work\keilc51\C51\BIN\C51.EXE User\timer.c OMF2 OPTIMIZE(8,SPEED) BROWSE INCDIR(.\User) DEBUG PRI
+                    -NT(.\Listings\timer.lst) TABS(2) OBJECT(.\Objects\timer.obj)
 
 line level    source
 
    1          #include "timer.h"
    2          #include "uart.h"
    3          #include "music.h"
-   4          #include<stdlib.h>
-   5          #define uint unsigned int
-   6          #define uchar unsigned char
-   7          #define one_day_second  86400
-   8          sbit led1 = P1^0;
-   9          xdata long cnt = 0;
-  10          xdata long nowTime = 12470390;
-  11          xdata uchar month_day[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
-  12          xdata uint year = 2021;
-  13          xdata uchar month = 5,day = 24,hour = 12,minute = 0,second = 0, weekDay = 0;
-  14          code char weekDays[][7] = {"星期一","星期二","星期\xc8\xfd","星期四","星期五","星期六","星期天"};
-  15          bit time_update_flag = 0;
-  16          bit sensor_flag = 0;
-  17          xdata uint count_down_time= 0;
-  18          xdata char mempool[200];
-  19          xdata char timetable[5][5][18];
-  20          code uchar class_hour[] = {7, 9, 14, 16,18};
-  21          code uchar class_minute[] = {50, 50, 20, 00,50};
-  22          /*************************************************
-  23                              闹钟结构体
-  24          *************************************************/
-  25          struct CLOCK{
-  26            struct CLOCK *pNext;
-  27            uchar state; //0x01 isOpen 0x06 normal
-  28            uchar hour,minute, second;
-  29            uint id;
-  30          } *clock_head, *clock_last;
-  31          /*************************************************
-  32                              定时器0初始化
-  33          *************************************************/
-  34          void time0_init(void)
-  35          {
-  36   1        uchar i,j;
-  37   1        TMOD |= 0x01;
-  38   1        TH0 = (65536 - 9174) / 256;
-  39   1        TL0 = (65536 - 9174) % 256;
-  40   1        EA = 1;
-  41   1        ET0 = 1;
-  42   1        TR0 = 1;
-  43   1        EA=1;
-  44   1        init_mempool (&mempool, sizeof(mempool));
-  45   1        clock_head = (struct  CLOCK*)malloc(sizeof(struct CLOCK));
-  46   1        clock_head->id = 0;
-  47   1        clock_last = clock_head;
-  48   1        clock_last->pNext = NULL;
-  49   1        addClock(12,0,10,0x00);
-  50   1        addClock(13,15,0,0x00);
-  51   1        addClock(14,15,0,0x00);
-  52   1        deleteClock(2);
-  53   1        for(i=0;i < 5;i++)
-  54   1        {
-C51 COMPILER V9.54   TIMER                                                                 06/10/2021 16:03:54 PAGE 2   
+   4          #include "ADC.h"
+   5          #include<stdlib.h>
+   6          #define uint unsigned int
+   7          #define uchar unsigned char
+   8          #define one_day_second  86400
+   9          sbit led1 = P1^0;
+  10          xdata long cnt = 0;
+  11          xdata long nowTime = 16012190; //16012190  15292894
+  12          xdata uchar month_day[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+  13          xdata uint year = 2021;
+  14          xdata uchar month = 5,day = 24,hour = 12,minute = 0,second = 0, weekDay = 0;
+  15          code char weekDays[][7] = {"星期一","星期二","星期\xc8\xfd","星期四","星期五","星期六","星期天"};
+  16          bit time_update_flag = 0;
+  17          bit sensor_flag = 0;
+  18          char door_flag = -1;
+  19          char screen_state = 0;
+  20          bit AD_flag = 0;
+  21          bit sensor_send_flag=0;
+  22          uint count_down_time= 0;
+  23          xdata char mempool[200];
+  24          xdata char timetable[5][5][18];
+  25          code uchar class_hour[] = {7, 9, 14, 16,18};
+  26          code uchar class_minute[] = {50, 50, 20, 00,50};
+  27          /*************************************************
+  28                              闹钟结构体
+  29          *************************************************/
+  30          struct CLOCK{
+  31            struct CLOCK *pNext;
+  32            uchar state; //0x01 isOpen 0x06 normal
+  33            uchar hour,minute, second;
+  34            uint id;
+  35          } *clock_head, *clock_last;
+  36          /*************************************************
+  37                              定时器0初始化
+  38          *************************************************/
+  39          void time0_init(void)
+  40          {
+  41   1        uchar i,j;
+  42   1        TMOD |= 0x01;
+  43   1        TH0 = (65536 - 9174) / 256;
+  44   1        TL0 = (65536 - 9174) % 256;
+  45   1        EA = 1;
+  46   1        ET0 = 1;
+  47   1        TR0 = 1;
+  48   1        EA=1;
+  49   1        init_mempool (&mempool, sizeof(mempool));
+  50   1        clock_head = (struct  CLOCK*)malloc(sizeof(struct CLOCK));
+  51   1        clock_head->id = 0;
+  52   1        clock_last = clock_head;
+  53   1        clock_last->pNext = NULL;
+  54   1        addClock(7,50,20,0x00);
+C51 COMPILER V9.60.0.0   TIMER                                                             07/05/2021 21:39:53 PAGE 2   
 
-  55   2          for(j=0; j < 5; j++)
-  56   2            timetable[i][j][0] = '\0';
-  57   2        }
-  58   1        parseClass("1;0;运控|博学楼A06");
-  59   1        changeToNowTime(nowTime);
-  60   1      }
-  61          /*************************************************
-  62                              定时器0中断
-  63          *************************************************/
-  64          void T0_time(void) interrupt 1
-  65          {
-  66   1        TH0 = (65536 - 9174) / 256;
-  67   1        TL0 = (65536 - 9174) % 256;
-  68   1        cnt++;
-  69   1        if(cnt % 100 == 0)
-  70   1        {
-  71   2          led1 = !led1;
-  72   2          nowTime++;
-  73   2          time_update_flag = 1;
-  74   2          if(count_down_time > 0)
-  75   2            count_down_time--;
-  76   2          if(count_down_time == 1)
-  77   2          {
-  78   3            clock_stop();
-  79   3          }
-  80   2        }
-  81   1        if(cnt % 300 == 0)
-  82   1        {
-  83   2          sensor_flag = 1;
-  84   2        }
-  85   1        if (cnt >= 1000000)
-  86   1          cnt = 0;
-  87   1      }
-  88          /*************************************************
-  89                              判断是否闰年
-  90          *************************************************/
-  91          uchar isRun(uint y)
-  92          {
-  93   1        if((y % 4 == 0 && y % 100 != 0) || (y % 400 == 0))
-  94   1          return 1;
-  95   1        else
-  96   1          return 0;
-  97   1      }
-  98          /*************************************************
-  99                              数字转时间
- 100          *************************************************/
- 101          void changeToNowTime(long n)
- 102          {
- 103   1        uchar i;
- 104   1        long t,u;
- 105   1        t = n / 86400 +  1;
- 106   1        u = n % 86400;
- 107   1        weekDay = (t-4) % 7;
- 108   1        year = 2021;
- 109   1        while(t - 365 - isRun(year) > 0)
- 110   1        {
- 111   2          year++;
- 112   2          t -=(365 + isRun(year));
- 113   2        }
- 114   1        if(isRun(year))
- 115   1          month_day[1] = 29;
- 116   1        else
-C51 COMPILER V9.54   TIMER                                                                 06/10/2021 16:03:54 PAGE 3   
+  55   1      //  addClock(13,15,0,0x00);
+  56   1      //  addClock(14,15,0,0x00);
+  57   1      //  deleteClock(2);
+  58   1        for(i=0;i < 5;i++)
+  59   1        {
+  60   2          for(j=0; j < 5; j++)
+  61   2            timetable[i][j][0] = '\0';
+  62   2        }
+  63   1        parseClass("0;0;运控|博学楼A06");
+  64   1        changeToNowTime(nowTime);
+  65   1      }
+  66          /*************************************************
+  67                              定时器0中断
+  68          *************************************************/
+  69          void T0_time(void) interrupt 1
+  70          {
+  71   1        TH0 = (65536 - 9174) / 256;
+  72   1        TL0 = (65536 - 9174) % 256;
+  73   1        cnt++;
+  74   1        if(cnt % 100 == 0) //1s
+  75   1        {
+  76   2          led1 = !led1;
+  77   2          nowTime++;
+  78   2          time_update_flag = 1;
+  79   2          if(count_down_time > 0)
+  80   2            count_down_time--;
+  81   2              if (door_flag > 0)
+  82   2                  door_flag --;
+  83   2          if(count_down_time == 1)
+  84   2          {
+  85   3            clock_stop();
+  86   3            //changeToNowTime(nowTime);
+  87   3            screen_state = 2;
+  88   3          }
+  89   2        }
+  90   1        if(cnt % 300 == 0)
+  91   1        {
+  92   2          AD_flag = 1;
+  93   2        }
+  94   1        if(cnt % 500 == 0)
+  95   1        {
+  96   2          sensor_flag = 1;
+  97   2        }
+  98   1        if(cnt % 1000 == 0)
+  99   1          sensor_send_flag = 1;
+ 100   1        if (cnt >= 1000000)
+ 101   1          cnt = 0;
+ 102   1      }
+ 103          /*************************************************
+ 104                              判断是否闰年
+ 105          *************************************************/
+ 106          uchar isRun(uint y)
+ 107          {
+ 108   1        if((y % 4 == 0 && y % 100 != 0) || (y % 400 == 0))
+ 109   1          return 1;
+ 110   1        else
+ 111   1          return 0;
+ 112   1      }
+ 113          /*************************************************
+ 114                              数字转时间
+ 115          *************************************************/
+ 116          void changeToNowTime(long n)
+C51 COMPILER V9.60.0.0   TIMER                                                             07/05/2021 21:39:53 PAGE 3   
 
- 117   1          month_day[1] = 28;
- 118   1        month = 1;
- 119   1        for(i=0; i < 12; i++)
- 120   1        {
- 121   2          if((t - month_day[i]) > 0)
- 122   2          {
- 123   3            t -=month_day[i];
- 124   3            month++;
- 125   3          }
- 126   2          else
- 127   2            break;
+ 117          {
+ 118   1        uchar i;
+ 119   1        long t,u;
+ 120   1        t = n / 86400 +  1;
+ 121   1        u = n % 86400;
+ 122   1        weekDay = (t-4) % 7;
+ 123   1        year = 2021;
+ 124   1        while(t - 365 - isRun(year) > 0)
+ 125   1        {
+ 126   2          year++;
+ 127   2          t -=(365 + isRun(year));
  128   2        }
- 129   1        day = t;
- 130   1        hour = u / 3600;
- 131   1        u %= 3600;
- 132   1        minute = u / 60;
- 133   1        u %= 60;
- 134   1        second = u %60;
- 135   1      }
- 136          /*************************************************
- 137                              时间转数字
- 138          *************************************************/
- 139          long timeToNum(uint tyear,uchar tmonth,uchar tday,uchar thour,uchar tminute,uchar tsecond)
- 140          {
- 141   1        long t = 0;
- 142   1        uchar i;
- 143   1        if (isRun(tyear))
- 144   1          month_day[1] = 29;
- 145   1        else
- 146   1          month_day[1] = 28;
- 147   1        while(tyear - 2021 > 0)
- 148   1        {
- 149   2          t += (365 + isRun(tyear))*86400;
- 150   2          tyear++;
- 151   2        }
- 152   1        for(i = 0; i < tmonth - 1; i++)
- 153   1          t += month_day[i]*86400;
- 154   1        t+=(tday - 1) * 86400;
- 155   1        t+= thour*3600;
- 156   1        t+= tminute*60;
- 157   1        t+=tsecond;
- 158   1        return t;
- 159   1      }
- 160          /*************************************************
- 161                              时间更新事件
- 162          *************************************************/
- 163          void time_update()
- 164          {
- 165   1        if(second<59)
- 166   1        {
- 167   2          second++;
- 168   2        } else if (minute < 59)
- 169   1        {
- 170   2          second = 0;
- 171   2          minute++;
- 172   2        } else 
- 173   1          changeToNowTime(nowTime);
- 174   1        checkClock();
- 175   1      }
- 176          /*************************************************
- 177                              增加闹钟
- 178          *************************************************/
-C51 COMPILER V9.54   TIMER                                                                 06/10/2021 16:03:54 PAGE 4   
+ 129   1        if(isRun(year))
+ 130   1          month_day[1] = 29;
+ 131   1        else
+ 132   1          month_day[1] = 28;
+ 133   1        month = 1;
+ 134   1        for(i=0; i < 12; i++)
+ 135   1        {
+ 136   2          if((t - month_day[i]) > 0)
+ 137   2          {
+ 138   3            t -=month_day[i];
+ 139   3            month++;
+ 140   3          }
+ 141   2          else
+ 142   2            break;
+ 143   2        }
+ 144   1        day = t;
+ 145   1        hour = u / 3600;
+ 146   1        u %= 3600;
+ 147   1        minute = u / 60;
+ 148   1        u %= 60;
+ 149   1        second = u %60;
+ 150   1      }
+ 151          /*************************************************
+ 152                              时间转数字
+ 153          *************************************************/
+ 154          long timeToNum(uint tyear,uchar tmonth,uchar tday,uchar thour,uchar tminute,uchar tsecond)
+ 155          {
+ 156   1        long t = 0;
+ 157   1        uchar i;
+ 158   1        if (isRun(tyear))
+ 159   1          month_day[1] = 29;
+ 160   1        else
+ 161   1          month_day[1] = 28;
+ 162   1        while(tyear - 2021 > 0)
+ 163   1        {
+ 164   2          t += (365 + isRun(tyear))*86400;
+ 165   2          tyear++;
+ 166   2        }
+ 167   1        for(i = 0; i < tmonth - 1; i++)
+ 168   1          t += month_day[i]*86400;
+ 169   1        t+=(tday - 1) * 86400;
+ 170   1        t+= thour*3600;
+ 171   1        t+= tminute*60;
+ 172   1        t+=tsecond;
+ 173   1        return t;
+ 174   1      }
+ 175          /*************************************************
+ 176                              时间更新事件
+ 177          *************************************************/
+ 178          void time_update()
+C51 COMPILER V9.60.0.0   TIMER                                                             07/05/2021 21:39:53 PAGE 4   
 
- 179          void addClock(uchar hour,uchar minute,uchar second, uchar sta)
- 180          {
- 181   1        struct CLOCK * t;
- 182   1        t = (struct  CLOCK*)malloc(sizeof(struct CLOCK));
- 183   1        clock_last->pNext = t;
- 184   1        t->hour = hour;
- 185   1        t->minute = minute;
- 186   1        t->second = second;
- 187   1        t->state = sta;
- 188   1        t->pNext = NULL;
- 189   1        t->id = clock_last->id + 1;
- 190   1        clock_last = t;
- 191   1      }
- 192          void deleteClock(uint id)
- 193          {
- 194   1        struct CLOCK * t;
- 195   1        struct CLOCK * tt;
- 196   1        t = clock_head;
- 197   1        while(t->pNext != NULL)
- 198   1        {
- 199   2          if(t->pNext->id == id)
- 200   2          {
- 201   3            tt = t->pNext;
- 202   3            if(tt == clock_last)
- 203   3              clock_last = t;
- 204   3            t->pNext = tt->pNext;
- 205   3            free(tt);
- 206   3            break;
- 207   3          }
- 208   2          t = t->pNext;
- 209   2        }
- 210   1      }
- 211          /*************************************************
- 212                              遍历闹钟
- 213          *************************************************/
- 214          void showClock()
- 215          {
- 216   1        struct CLOCK * t;
- 217   1        t = clock_head;
- 218   1        while(t->pNext != NULL)
- 219   1        {
- 220   2          t = t->pNext;
- 221   2          uartSend_number(t->hour);
- 222   2          uartSend(":");
- 223   2          uartSend_number(t->minute);
- 224   2          uartSend(":");
- 225   2          uartSend_number(t->second);
- 226   2          uartSend("  ");
- 227   2          uartSend_number(t->id);
- 228   2          uartSend("\r\n");
- 229   2        }
- 230   1      }
- 231          /*************************************************
- 232                      检查是否有闹钟时事件发生
- 233          *************************************************/
- 234          void checkClock()
- 235          {
- 236   1        uchar i ;
- 237   1        struct CLOCK * t;
- 238   1        t = clock_head;
- 239   1        while(t->pNext != NULL)
- 240   1        {
-C51 COMPILER V9.54   TIMER                                                                 06/10/2021 16:03:54 PAGE 5   
+ 179          {
+ 180   1        if(second<59)
+ 181   1        {
+ 182   2          second++;
+ 183   2        } else if (minute < 59)
+ 184   1        {
+ 185   2          second = 0;
+ 186   2          minute++;
+ 187   2        } else 
+ 188   1          changeToNowTime(nowTime);
+ 189   1        checkClock();
+ 190   1      }
+ 191          /*************************************************
+ 192                              增加闹钟
+ 193          *************************************************/
+ 194          void addClock(uchar hour,uchar minute,uchar second, uchar sta)
+ 195          {
+ 196   1        struct CLOCK * t;
+ 197   1        t = (struct  CLOCK*)malloc(sizeof(struct CLOCK));
+ 198   1        clock_last->pNext = t;
+ 199   1        t->hour = hour;
+ 200   1        t->minute = minute;
+ 201   1        t->second = second;
+ 202   1        t->state = sta;
+ 203   1        t->pNext = NULL;
+ 204   1        t->id = clock_last->id + 1;
+ 205   1        clock_last = t;
+ 206   1      }
+ 207          void deleteClock(uint id)
+ 208          {
+ 209   1        struct CLOCK * t;
+ 210   1        struct CLOCK * tt;
+ 211   1        t = clock_head;
+ 212   1        while(t->pNext != NULL)
+ 213   1        {
+ 214   2          if(t->pNext->id == id)
+ 215   2          {
+ 216   3            tt = t->pNext;
+ 217   3            if(tt == clock_last)
+ 218   3              clock_last = t;
+ 219   3            t->pNext = tt->pNext;
+ 220   3            free(tt);
+ 221   3            break;
+ 222   3          }
+ 223   2          t = t->pNext;
+ 224   2        }
+ 225   1      }
+ 226          /*************************************************
+ 227                              遍历闹钟
+ 228          *************************************************/
+ 229          void showClock()
+ 230          {
+ 231   1        struct CLOCK * t;
+ 232   1        t = clock_head;
+ 233   1        while(t->pNext != NULL)
+ 234   1        {
+ 235   2          t = t->pNext;
+ 236   2          uartSend_number(t->hour);
+ 237   2          uartSend(":");
+ 238   2          uartSend_number(t->minute);
+ 239   2          uartSend(":");
+ 240   2          uartSend_number(t->second);
+C51 COMPILER V9.60.0.0   TIMER                                                             07/05/2021 21:39:53 PAGE 5   
 
- 241   2          t = t->pNext;
- 242   2          if((t->state & 0x01))
- 243   2            continue;
- 244   2          if(hour == t->hour && minute == t->minute && second == t->second)
- 245   2          {
- 246   3            //如果是正常的闹钟
- 247   3            if((t->state & 0x06) == 0x00)
- 248   3            {
- 249   4              P1 &= ~0x04;
- 250   4              clock_start();
- 251   4              count_down_time = 10;
- 252   4            }
- 253   3            //工作日闹钟
- 254   3            else if ((t->state & 0x06) == 0x02 && weekDay<5)
- 255   3            {
- 256   4              P1 &= ~0x04;
- 257   4              count_down_time = 3;
- 258   4            }
- 259   3          }
- 260   2        }
- 261   1        for(i = 0; i < 5;i++)
- 262   1        {
- 263   2          if(hour == class_hour[i] && minute == class_minute[i] && second == 0 && weekDay < 5 && timetable[weekDay
+ 241   2          uartSend("  ");
+ 242   2          uartSend_number(t->id);
+ 243   2          uartSend("\r\n");
+ 244   2        }
+ 245   1      }
+ 246          /*************************************************
+ 247                              串口屏显示闹钟
+ 248          *************************************************/
+ 249          void ShowClocks() 
+ 250          {
+ 251   1        struct CLOCK * t;
+ 252   1        t = clock_head;
+ 253   1        uart2Clear();
+ 254   1        uart2AddChar("CLR(51);DIR(3);");
+ 255   1        while(t->pNext != NULL)
+ 256   1        {
+ 257   2          t = t->pNext;
+ 258   2          switch(t->id)
+ 259   2          {
+ 260   3            case 1 :uart2AddChar("SBC(51);DCV24(100,55,'"); break;
+ 261   3            case 2 :uart2AddChar("SBC(51);DCV24(100,80,'"); break;
+ 262   3            case 3 :uart2AddChar("SBC(51);DCV24(100,105,'"); break;
+ 263   3            case 4 :uart2AddChar("SBC(51);DCV24(100,130,'"); break;
+ 264   3            case 5 :uart2AddChar("SBC(51);DCV24(100,155,'"); break;
+ 265   3          }
+ 266   2          uart2AddChar(num_to_Str(t->hour,2));
+ 267   2          uart2AddChar(":");
+ 268   2          uart2AddChar(num_to_Str(t->minute,2));
+ 269   2          uart2AddChar(":");
+ 270   2          uart2AddChar(num_to_Str(t->second,2));
+ 271   2          uart2AddChar("',16);");
+ 272   2        }
+ 273   1        uart2SendEnd();
+ 274   1        checkBusy();
+ 275   1      }
+ 276          /*************************************************
+ 277                              修改闹钟
+ 278          *************************************************/
+ 279          //void Show_onebit(uchar num, uchar bflag, uchar time, uchar flag1, uchar flag2)
+ 280          //{
+ 281          //  if((num == flag1) && (bflag == flag2)) //选中标记
+ 282          //  {
+ 283          //    uart2AddChar("SBC(51);DCV24(");
+ 284          //    uart2AddChar(num_to_Str(xaxis[bflag],-1));
+ 285          //    uart2AddChar(",");
+ 286          //    uart2AddChar(num_to_Str(yaxis[num],-1));
+ 287          //    uart2AddChar(",'");
+ 288          //    uart2AddChar(num_to_Str(time,2));
+ 289          //    if(bflag > 0)
+ 290          //    {
+ 291          //      uart2AddChar(":");
+ 292          //    }
+ 293          //    uart2AddChar("',30);");
+ 294          //  }
+ 295          //  else
+ 296          //  {
+ 297          //    uart2AddChar("SBC(51);DCV24(");
+ 298          //    uart2AddChar(num_to_Str(xaxis[bflag],-1));
+ 299          //    uart2AddChar(",");
+ 300          //    uart2AddChar(num_to_Str(yaxis[num],-1));
+ 301          //    uart2AddChar(",'");
+ 302          //    uart2AddChar(num_to_Str(time,2));
+C51 COMPILER V9.60.0.0   TIMER                                                             07/05/2021 21:39:53 PAGE 6   
+
+ 303          //    if(bflag > 0)
+ 304          //    {
+ 305          //      uart2AddChar(":");
+ 306          //    }
+ 307          //    uart2AddChar("',16);");
+ 308          //  }
+ 309          //}
+ 310          
+ 311          //void Show_oneclock(uchar num, uchar hour, uchar minute, uchar second, uchar flag1,uchar flag2)
+ 312          //{
+ 313          //  uart2Clear();
+ 314          //  Show_onebit(num,2,hour,flag1,flag2);
+ 315          //  Show_onebit(num,1,minute,flag1,flag2);
+ 316          //  Show_onebit(num,0,second,flag1,flag2);
+ 317          //  uart2SendEnd();
+ 318          //  checkBusy();
+ 319          //}
+ 320          /*************************************************
+ 321                      检查是否有闹钟时事件发生
+ 322          *************************************************/
+ 323          void checkClock()
+ 324          {
+ 325   1        uchar i ;
+ 326   1        struct CLOCK * t;
+ 327   1        t = clock_head;
+ 328   1        while(t->pNext != NULL)
+ 329   1        {
+ 330   2          t = t->pNext;
+ 331   2          if((t->state & 0x01))
+ 332   2            continue;
+ 333   2          if(hour == t->hour && minute == t->minute && second == t->second)
+ 334   2          {
+ 335   3            //如果是正常的闹钟
+ 336   3            if((t->state & 0x06) == 0x00)
+ 337   3            {
+ 338   4              // 有时钟发生
+ 339   4              clock_start();
+ 340   4              count_down_time = 15;
+ 341   4              uart2Clear();uart2AddChar("FSIMG(2711552,0,0,320,240,0)");uart2SendEnd();
+ 342   4              screen_state = 1;
+ 343   4            }
+ 344   3            //工作日闹钟
+ 345   3            else if ((t->state & 0x06) == 0x02 && weekDay<5)
+ 346   3            {
+ 347   4              count_down_time = 3;
+ 348   4            }
+ 349   3          }
+ 350   2        }
+ 351   1        for(i = 0; i < 5;i++)
+ 352   1        {
+ 353   2          if(hour == class_hour[i] && minute == class_minute[i] && second == 0 && weekDay < 5 && timetable[weekDay
              -][i][0] !='\0')
- 264   2          {
- 265   3            play_one(2);
- 266   3          }
- 267   2        }
- 268   1      }
- 269          /*************************************************
- 270                           解析课程表
- 271          *************************************************/
- 272          void parseClass(char * s)
- 273          {
- 274   1        char t = -1,u = -1;
- 275   1        uchar w,i,j;
- 276   1        i = 0;
- 277   1        while(s[i] != '\0')
- 278   1        {
- 279   2          if(s[i] == ';')
- 280   2          {
- 281   3            if(t == -1)
- 282   3              t = w - '0';
- 283   3            else if (u == -1)
- 284   3            {
- 285   4              i++;
- 286   4              u = w - '0';
- 287   4              j = 0;
- 288   4              while(s[i] != ';' && s[i] != '\0')
- 289   4                timetable[t][u][j++] = s[i++];
- 290   4              timetable[t][u][j++] = '\0';
- 291   4              u = -1;
- 292   4              t = -1;
- 293   4            }
- 294   3          }
- 295   2          w = s[i++];
- 296   2        }
- 297   1      }
- 298          /*************************************************
- 299                           显示时间
- 300          *************************************************/
- 301          void showTime()
-C51 COMPILER V9.54   TIMER                                                                 06/10/2021 16:03:54 PAGE 6   
+ 354   2          {
+ 355   3            class_start();
+ 356   3            count_down_time = 15;
+ 357   3            uart2Clear();uart2AddChar("FSIMG(2404352,0,0,320,240,0)");uart2SendEnd();
+ 358   3            screen_state = 1;
+ 359   3            //play_one(2);
+ 360   3          }
+ 361   2        }
+ 362   1      }
+ 363          /*************************************************
+C51 COMPILER V9.60.0.0   TIMER                                                             07/05/2021 21:39:53 PAGE 7   
 
- 302          {
- 303   1        uart2Clear();
- 304   1        uart2AddChar("SBC(51);DCV24(80,25,'");
- 305   1        uart2AddChar(num_to_Str(hour,-1));
- 306   1        uart2AddChar(":");
- 307   1        uart2AddChar(num_to_Str(minute,2));
- 308   1        uart2AddChar(":");
- 309   1        uart2AddChar(num_to_Str(second,2));
- 310   1        uart2AddChar("',16);");
- 311   1        uart2AddChar("DCV24(80,50,'");
- 312   1        uart2AddChar(num_to_Str(month,-1));
- 313   1        uart2AddChar("月");
- 314   1        uart2AddChar(num_to_Str(day,-1));
- 315   1        uart2AddChar("日',16);");
- 316   1        uart2AddChar("DCV24(85,75,'");
- 317   1        uart2AddChar(weekDays[weekDay]);
- 318   1        uart2AddChar("',16);");
- 319   1        uart2SendEnd();
- 320   1      }
+ 364                           解析课程表
+ 365          *************************************************/
+ 366          void parseClass(char * s)
+ 367          {
+ 368   1        char t = -1,u = -1;
+ 369   1        uchar w,i,j;
+ 370   1        i = 0;
+ 371   1        while(s[i] != '\0')
+ 372   1        {
+ 373   2          if(s[i] == ';')
+ 374   2          {
+ 375   3            if(t == -1)
+ 376   3              t = w - '0';
+ 377   3            else if (u == -1)
+ 378   3            {
+ 379   4              i++;
+ 380   4              u = w - '0';
+ 381   4              j = 0;
+ 382   4              while(s[i] != ';' && s[i] != '\0')
+ 383   4                timetable[t][u][j++] = s[i++];
+ 384   4              timetable[t][u][j++] = '\0';
+ 385   4              u = -1;
+ 386   4              t = -1;
+ 387   4            }
+ 388   3          }
+ 389   2          w = s[i++];
+ 390   2        }
+ 391   1      }
+ 392          /*************************************************
+ 393                              设置时间
+ 394          *************************************************/
+ 395          void setTime(long t)
+ 396          {
+ 397   1        nowTime = t;
+ 398   1        changeToNowTime(nowTime);
+ 399   1      }
+ 400          /*************************************************
+ 401                           显示时间
+ 402          *************************************************/
+ 403          void showTime()
+ 404          {
+ 405   1        uart2Clear();
+ 406   1        uart2AddChar("SBC(61);DCV24(80,25,'");
+ 407   1        uart2AddChar(num_to_Str(hour,2));
+ 408   1        uart2AddChar(":");
+ 409   1        uart2AddChar(num_to_Str(minute,2));
+ 410   1        uart2AddChar(":");
+ 411   1        uart2AddChar(num_to_Str(second,2));
+ 412   1        uart2AddChar("',16);");
+ 413   1        uart2AddChar("DCV24(80,50,'");
+ 414   1        uart2AddChar(num_to_Str(month,-1));
+ 415   1        uart2AddChar("月");
+ 416   1        uart2AddChar(num_to_Str(day,-1));
+ 417   1        uart2AddChar("日',16);");
+ 418   1        uart2AddChar("DCV24(85,75,'");
+ 419   1        uart2AddChar(weekDays[weekDay]);
+ 420   1        uart2AddChar("',16);");
+ 421   1        uart2SendEnd();
+ 422   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   2510    ----
-   CONSTANT SIZE    =    155    ----
-   XDATA SIZE       =    680    ----
+C51 COMPILER V9.60.0.0   TIMER                                                             07/05/2021 21:39:53 PAGE 8   
+
+   CODE SIZE        =   2926    ----
+   CONSTANT SIZE    =    347    ----
+   XDATA SIZE       =    678    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      6      55
+   DATA SIZE        =     10      58
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =      2    ----
+   BIT SIZE         =      4    ----
    EDATA SIZE       =   ----    ----
    HDATA SIZE       =   ----    ----
    XDATA CONST SIZE =   ----    ----

@@ -1,4 +1,5 @@
 #include "key.h"
+#include "STC12C5A60S2.h"
 #include <intrins.h>
 #define uint unsigned int 
 #define uchar unsigned char 
@@ -36,30 +37,66 @@ bit getBit(uchar p, uchar i) {
 	}
 	return 0;
 }
+void setBit(uchar p, uchar i, bit state)
+{
+	uchar mask;
+	if (state) {
+		mask = 0x01 << i;
+		switch(p){
+			case 0:
+				P0 |= mask;
+				break;
+			case 1: 
+				P1 |= mask;
+				break;
+			case 2: 
+				P2 |= mask;
+				break;
+			case 3: 
+				P3 |= mask;
+				break;
+		}
+	} else {
+		mask = 0xfe << i;
+		switch(p){
+			case 0:
+				P0 &= mask;break;
+			case 1: 
+				P1 &= mask;break;
+			case 2: 
+				P2 &= mask;break;
+			case 3: 
+				P3 &= mask;break;
+		}
+	}
+}
 /*****************
  É¨Ãè°´¼ü
 ******************/
+sbit tt = P0^7;
 char scanKey(bit longAble)
 {
-	static bit be_state = 0;
-	uchar i;
-	if(longAble)
-		be_state = 1;
-	for(i = 0; i < 4; i++)
+	uchar col[] = {4};
+	uchar i,j,t=0xff;
+	if (!tt)
+		t = 0x7f;
+	for(i = 0; i < 3; i++)
 	{
-		if(getBit(3,keys[i]) == 0)
+		P0 = _crol_(0xef,i)& t;
+		for(j = 0;j < 4; j++)
 		{
-			Delay10ms();
-			if(getBit(3,keys[i]) == 0)
+			if (getBit(0,j) == 0)
 			{
-				if(be_state != 0)
-					return -1;
-				be_state = 1;
-				return i;
+				Delay10ms();
+				if (getBit(0,j) == 0)
+				{
+					if (longAble == 0)
+						while(getBit(0,j) == 0);
+					return j*3 + i;
+				}
 			}
 		}
 	}
-	be_state = 0;
 	return -1;
 }
 /*****************

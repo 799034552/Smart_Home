@@ -2,6 +2,7 @@
 #include <stdio.h>
 //串口数据
 unsigned char i2 = 0;
+bit Busy = 0;
 xdata char uart2SendData[100];
 xdata char strRes[8] = "10\011111";
 //串口2初始化
@@ -160,4 +161,12 @@ char* num_to_Str(long num, char want_bit)
 	}
 	strRes[i] = '\0';
 	return strRes;
+}
+///*************************************************
+//                    串口屏是否忙
+//*************************************************/
+void checkBusy()
+{
+	Busy = 1;
+	while(Busy);
 }
